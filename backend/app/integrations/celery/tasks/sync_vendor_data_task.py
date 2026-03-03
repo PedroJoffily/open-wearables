@@ -166,7 +166,7 @@ def sync_vendor_data(
                                 "sync:provider:workouts:error",
                                 task_id=task_id,
                                 provider=provider_name,
-                                data={"error": str(e)},
+                                data={"error": "An error occurred syncing workouts"},
                             )
 
                     # Sync 247 data (sleep, recovery, activity) and SAVE to database
@@ -246,16 +246,25 @@ def sync_vendor_data(
                                 "sync:provider:247:error",
                                 task_id=task_id,
                                 provider=provider_name,
-                                data={"error": str(e)},
+                                data={"error": "An error occurred syncing 24/7 data"},
                             )
 
                     user_connection_repo.update_last_synced_at(db, connection)
 
                     result.providers_synced[provider_name] = provider_result
+
+                    # Compute success based on individual component results
+                    sync_success = True
+                    for component_result in provider_result.params.values():
+                        # Each component result is a dict with a "success" key
+                        if isinstance(component_result, dict) and not component_result.get("success", False):
+                            sync_success = False
+                            break
+
                     log_structured(
                         logger,
                         "info",
-                        f"Successfully synced {provider_name} for user {user_id}",
+                        f"Successfully synced {provider_name} for user {user_id} (success={sync_success})",
                         provider="sync_vendor_data",
                         task="sync_vendor_data",
                     )
@@ -264,7 +273,7 @@ def sync_vendor_data(
                         "sync:provider:completed",
                         task_id=task_id,
                         provider=provider_name,
-                        data={"success": True, "index": idx, "total": len(connections)},
+                        data={"success": sync_success, "index": idx, "total": len(connections)},
                     )
 
                 except Exception as e:
@@ -273,7 +282,7 @@ def sync_vendor_data(
                         "sync:provider:error",
                         task_id=task_id,
                         provider=provider_name,
-                        data={"error": str(e)},
+                        data={"error": "An error occurred syncing provider data"},
                     )
                     log_and_capture_error(
                         e,
