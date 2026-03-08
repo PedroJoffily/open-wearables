@@ -211,7 +211,7 @@ class TestChangePassword:
         response = client.post(f"{api_v1_prefix}/auth/change-password", json=payload, headers=headers)
 
         assert response.status_code == 400
-        assert "The new passwords do not match" in str(response.json())
+        assert "The confirmation password does not match" in str(response.json())
 
 
 class TestGetCurrentDeveloper:
