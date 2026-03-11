@@ -49,19 +49,8 @@ class DeveloperUpdateInternal(BaseModel):
 
 class PasswordChange(BaseModel):
     current_password: str
-    new_password: str = Field(..., min_length=8)
+    new_password: str
     confirm_password: str
-
-    @field_validator("new_password")
-    @classmethod
-    def password_complexity(cls, v: str) -> str:
-        if not any(char.isdigit() for char in v):
-            raise ValueError("Password must contain at least one number")
-
-        if not any(char.isalpha() for char in v):
-            raise ValueError("Password must contain at least one letter")
-
-        return v
 
     @model_validator(mode="after")
     def check_passwords_match(self) -> "PasswordChange":
