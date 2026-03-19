@@ -59,6 +59,21 @@ export function useWorkouts(userId: string, params?: WorkoutsParams) {
 }
 
 /**
+ * Get aggregated workout stats for a user (SQL-side aggregation)
+ * Uses GET /api/v1/users/{user_id}/events/workouts/stats
+ */
+export function useWorkoutStats(
+  userId: string,
+  params: { start_date: string; end_date: string }
+) {
+  return useQuery({
+    queryKey: queryKeys.health.workoutStats(userId, params),
+    queryFn: () => healthService.getWorkoutStats(userId, params),
+    enabled: !!userId && !!params.start_date && !!params.end_date,
+  });
+}
+
+/**
  * Get time series data for a user
  * Uses GET /api/v1/users/{user_id}/timeseries
  */
@@ -90,6 +105,36 @@ export function useSleepSummaries(userId: string, params: SummaryParams) {
   return useQuery({
     queryKey: queryKeys.health.sleepSummaries(userId, params),
     queryFn: () => healthService.getSleepSummaries(userId, params),
+    enabled: !!userId && !!params.start_date && !!params.end_date,
+  });
+}
+
+/**
+ * Get aggregated activity stats for a user (server-side aggregation)
+ * Uses GET /api/v1/users/{user_id}/summaries/activity/stats
+ */
+export function useActivityStats(
+  userId: string,
+  params: { start_date: string; end_date: string }
+) {
+  return useQuery({
+    queryKey: queryKeys.health.activityStats(userId, params),
+    queryFn: () => healthService.getActivityStats(userId, params),
+    enabled: !!userId && !!params.start_date && !!params.end_date,
+  });
+}
+
+/**
+ * Get aggregated sleep stats for a user (server-side aggregation)
+ * Uses GET /api/v1/users/{user_id}/summaries/sleep/stats
+ */
+export function useSleepStats(
+  userId: string,
+  params: { start_date: string; end_date: string }
+) {
+  return useQuery({
+    queryKey: queryKeys.health.sleepStats(userId, params),
+    queryFn: () => healthService.getSleepStats(userId, params),
     enabled: !!userId && !!params.start_date && !!params.end_date,
   });
 }
@@ -141,10 +186,22 @@ export function useSynchronizeDataFromProvider(
         queryKey: queryKeys.health.activitySummaries(userId),
       });
       queryClient.invalidateQueries({
+        queryKey: queryKeys.health.activityStats(userId),
+      });
+      queryClient.invalidateQueries({
         queryKey: queryKeys.health.sleepSessions(userId),
       });
       queryClient.invalidateQueries({
+        queryKey: queryKeys.health.sleepSummaries(userId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.health.sleepStats(userId),
+      });
+      queryClient.invalidateQueries({
         queryKey: queryKeys.health.bodySummary(userId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.health.workoutStats(userId),
       });
 
       toast.success('Data synchronized successfully');

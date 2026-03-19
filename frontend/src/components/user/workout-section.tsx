@@ -10,7 +10,11 @@ import {
   MoveHorizontal,
   Timer,
 } from 'lucide-react';
-import { useWorkouts, useTimeSeries } from '@/hooks/api/use-health';
+import {
+  useWorkouts,
+  useTimeSeries,
+  useWorkoutStats,
+} from '@/hooks/api/use-health';
 import { useCursorPagination } from '@/hooks/use-cursor-pagination';
 import {
   useDateRangeDates,
@@ -32,7 +36,6 @@ import { HR_CHART_CONFIG } from '@/lib/utils/chart-config';
 import {
   getWorkoutCategory,
   getWorkoutDetailFields,
-  calculateWorkoutStats,
   dateToTimestamp,
 } from '@/lib/utils/workout';
 import type { EventRecordResponse } from '@/lib/api/types';
@@ -337,22 +340,11 @@ export function WorkoutSection({
   const handleNextPage = () => pagination.goToNextPage(nextCursor);
   const handlePrevPage = pagination.goToPrevPage;
 
-  // Fetch workouts for summary (with date filter, larger limit)
-  const { data: summaryWorkouts, isLoading: summaryLoading } = useWorkouts(
-    userId,
-    {
-      start_date: dateToTimestamp(startDate),
-      end_date: dateToTimestamp(endDate),
-      limit: 100,
-      sort_order: 'desc',
-    }
-  );
-
-  // Calculate summary stats from date-filtered workouts
-  const stats = useMemo(
-    () => calculateWorkoutStats(summaryWorkouts?.data || []),
-    [summaryWorkouts]
-  );
+  // Fetch aggregated workout stats from backend (SQL-side aggregation)
+  const { data: stats, isLoading: summaryLoading } = useWorkoutStats(userId, {
+    start_date: dateToTimestamp(startDate),
+    end_date: dateToTimestamp(endDate),
+  });
 
   const workouts = workoutsResponse?.data || [];
   const hasData = workouts.length > 0 || (stats?.count ?? 0) > 0;
@@ -403,7 +395,7 @@ export function WorkoutSection({
                   </div>
                 </div>
                 <p className="text-2xl font-semibold text-white">
-                  {formatDuration(stats.totalDuration)}
+                  {formatDuration(stats.total_duration_seconds)}
                 </p>
                 <p className="text-xs text-zinc-500 mt-1">Total Time</p>
               </div>
@@ -416,7 +408,7 @@ export function WorkoutSection({
                   </div>
                 </div>
                 <p className="text-2xl font-semibold text-white">
-                  {Math.round(stats.totalCalories).toLocaleString()}
+                  {Math.round(stats.total_calories_kcal).toLocaleString()}
                 </p>
                 <p className="text-xs text-zinc-500 mt-1">Calories</p>
               </div>
@@ -429,7 +421,7 @@ export function WorkoutSection({
                   </div>
                 </div>
                 <p className="text-2xl font-semibold text-white">
-                  {(stats.totalDistance / 1000).toFixed(1)} km
+                  {(stats.total_distance_meters / 1000).toFixed(1)} km
                 </p>
                 <p className="text-xs text-zinc-500 mt-1">Distance</p>
               </div>

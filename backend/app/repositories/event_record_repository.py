@@ -506,6 +506,46 @@ class EventRecordRepository(
             )
         return summaries
 
+    def get_workout_stats(
+        self,
+        db_session: DbSession,
+        user_id: UUID,
+        start_date: datetime,
+        end_date: datetime,
+    ) -> dict | None:
+        """Get aggregated workout statistics for a user within a date range.
+
+        Returns dict with count, total_duration_seconds, total_calories_kcal, total_distance_meters.
+        Returns None if no workouts found.
+        """
+        row = (
+            db_session.query(
+                func.count(self.model.id).label("count"),
+                func.coalesce(func.sum(self.model.duration_seconds), 0).label("total_duration"),
+                func.coalesce(func.sum(WorkoutDetails.energy_burned), 0).label("total_calories"),
+                func.coalesce(func.sum(WorkoutDetails.distance), 0).label("total_distance"),
+            )
+            .join(DataSource, self.model.data_source_id == DataSource.id)
+            .outerjoin(WorkoutDetails, self.model.id == WorkoutDetails.record_id)
+            .filter(
+                DataSource.user_id == user_id,
+                self.model.category == "workout",
+                self.model.start_datetime >= start_date,
+                self.model.end_datetime < end_date,
+            )
+            .one()
+        )
+
+        if row.count == 0:
+            return None
+
+        return {
+            "count": row.count,
+            "total_duration_seconds": int(row.total_duration),
+            "total_calories_kcal": float(row.total_calories),
+            "total_distance_meters": float(row.total_distance),
+        }
+
     def get_daily_workout_aggregates(
         self,
         db_session: DbSession,

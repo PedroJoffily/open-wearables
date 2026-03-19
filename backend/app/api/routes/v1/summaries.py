@@ -6,9 +6,11 @@ from fastapi import APIRouter, HTTPException, Query
 from app.database import DbSession
 from app.schemas.common_types import PaginatedResponse
 from app.schemas.summaries import (
+    ActivityStatsResponse,
     ActivitySummary,
     BodySummary,
     RecoverySummary,
+    SleepStatsResponse,
     SleepSummary,
 )
 from app.services import ApiKeyDep
@@ -16,6 +18,34 @@ from app.services.summaries_service import summaries_service
 from app.utils.dates import parse_query_datetime
 
 router = APIRouter()
+
+
+@router.get("/users/{user_id}/summaries/activity/stats")
+def get_activity_stats(
+    user_id: UUID,
+    start_date: str,
+    end_date: str,
+    db: DbSession,
+    _api_key: ApiKeyDep,
+) -> ActivityStatsResponse | None:
+    """Returns aggregated activity statistics for a date range."""
+    return summaries_service.get_activity_stats(
+        db, user_id, parse_query_datetime(start_date), parse_query_datetime(end_date)
+    )
+
+
+@router.get("/users/{user_id}/summaries/sleep/stats")
+def get_sleep_stats(
+    user_id: UUID,
+    start_date: str,
+    end_date: str,
+    db: DbSession,
+    _api_key: ApiKeyDep,
+) -> SleepStatsResponse | None:
+    """Returns aggregated sleep statistics for a date range."""
+    return summaries_service.get_sleep_stats(
+        db, user_id, parse_query_datetime(start_date), parse_query_datetime(end_date)
+    )
 
 
 @router.get("/users/{user_id}/summaries/activity")

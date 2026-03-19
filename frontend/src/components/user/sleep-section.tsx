@@ -20,6 +20,7 @@ import {
 import {
   useSleepSessions,
   useSleepSummaries,
+  useSleepStats,
   useTimeSeries,
 } from '@/hooks/api/use-health';
 import { useCursorPagination } from '@/hooks/use-cursor-pagination';
@@ -45,13 +46,11 @@ import {
   formatBedtime,
 } from '@/lib/utils/format';
 import {
-  calculateSleepStats,
   getSleepSessionDetailFields,
   getSleepStageData,
   SLEEP_METRIC_CHART_COLORS,
   SLEEP_STAGE_COLORS,
   SLEEP_STAGE_LABELS,
-  type SleepStats,
   type SleepStageKey,
 } from '@/lib/utils/sleep';
 import { prepareHrChartData } from '@/lib/utils/timeseries';
@@ -59,6 +58,7 @@ import { HR_CHART_CONFIG } from '@/lib/utils/chart-config';
 import type {
   SleepSession,
   SleepStagesSummary,
+  SleepStatsResponse,
   SleepSummary,
 } from '@/lib/api/types';
 
@@ -81,7 +81,7 @@ interface SleepMetricDefinition {
   color: string;
   bgColor: string;
   glowColor: string;
-  getValue: (stats: SleepStats) => number | null;
+  getValue: (stats: SleepStatsResponse) => number | null;
   formatValue: (value: number | null) => string;
   getChartValue: (summary: SleepSummary) => number;
   unit: string;
@@ -96,7 +96,7 @@ const SLEEP_METRICS: SleepMetricDefinition[] = [
     color: 'text-emerald-400',
     bgColor: 'bg-emerald-500/10',
     glowColor: 'shadow-[0_0_15px_rgba(16,185,129,0.5)]',
-    getValue: (stats) => stats.avgEfficiency,
+    getValue: (stats) => stats.avg_efficiency_percent,
     formatValue: (v) => (v !== null ? `${Math.round(v)}%` : '-'),
     getChartValue: (s) => s.efficiency_percent || 0,
     unit: '%',
@@ -109,7 +109,7 @@ const SLEEP_METRICS: SleepMetricDefinition[] = [
     color: 'text-indigo-400',
     bgColor: 'bg-indigo-500/10',
     glowColor: 'shadow-[0_0_15px_rgba(99,102,241,0.5)]',
-    getValue: (stats) => stats.avgDuration,
+    getValue: (stats) => stats.avg_duration_minutes,
     formatValue: (v) => formatMinutes(v),
     getChartValue: (s) => s.duration_minutes || 0,
     unit: 'min',
@@ -462,15 +462,38 @@ export function SleepSection({
   const { startDate, endDate } = useDateRange(dateRange);
   const allTimeRange = useAllTimeRange();
 
-  // Fetch sleep summaries for summary stats (date range filtered)
-  const { data: sleepSummaries, isLoading: summaryLoading } = useSleepSummaries(
-    userId,
-    {
-      start_date: startDate,
-      end_date: endDate,
-      limit: 100,
-    }
-  );
+  // Fetch aggregated sleep stats from backend (server-side aggregation)
+  const { data: stats, isLoading: summaryLoading } = useSleepStats(userId, {
+    start_date: startDate,
+    end_date: endDate,
+  });
+
+  // Fetch sleep summaries for chart data and bedtime computation (needs local timezone)
+  const { data: sleepSummaries } = useSleepSummaries(userId, {
+    start_date: startDate,
+    end_date: endDate,
+    limit: 100,
+  });
+
+  // Compute average bedtime from chart data (keeps local timezone behavior)
+  const avgBedtime = useMemo(() => {
+    const summaries = sleepSummaries?.data || [];
+    if (summaries.length === 0) return null;
+
+    const bedtimes = summaries
+      .map((s) => s.start_time)
+      .filter((t): t is string => t !== null)
+      .map((t) => {
+        const date = new Date(t);
+        let minutes = date.getHours() * 60 + date.getMinutes();
+        if (minutes < 360) minutes += 1440;
+        return minutes;
+      });
+
+    return bedtimes.length > 0
+      ? bedtimes.reduce((a, b) => a + b, 0) / bedtimes.length
+      : null;
+  }, [sleepSummaries]);
 
   // Fetch sleep sessions with cursor-based pagination
   const {
@@ -489,12 +512,6 @@ export function SleepSection({
 
   const handleNextPage = () => pagination.goToNextPage(nextCursor);
   const handlePrevPage = pagination.goToPrevPage;
-
-  // Calculate aggregate statistics from date-range filtered summaries
-  const stats = useMemo(
-    () => calculateSleepStats(sleepSummaries?.data || []),
-    [sleepSummaries]
-  );
 
   // Get displayed sessions from current page data
   const displayedSessions = sessionsData?.data || [];
@@ -547,7 +564,7 @@ export function SleepSection({
                   icon={BedDouble}
                   iconColor="text-purple-400"
                   iconBgColor="bg-purple-500/10"
-                  value={String(stats.nightsTracked)}
+                  value={String(stats.nights_tracked)}
                   label="Nights Tracked"
                 />
 
@@ -572,7 +589,7 @@ export function SleepSection({
                   icon={Clock}
                   iconColor="text-sky-400"
                   iconBgColor="bg-sky-500/10"
-                  value={formatBedtime(stats.avgBedtime)}
+                  value={formatBedtime(avgBedtime)}
                   label="Avg Bedtime"
                 />
               </div>
@@ -640,45 +657,54 @@ export function SleepSection({
               )}
 
               {/* Sleep Stages Breakdown */}
-              {stats.stages && stats.stagesTotal > 0 && (
-                <div className="p-4 border border-zinc-800 rounded-lg bg-zinc-900/30">
-                  <h4 className="text-xs font-medium text-zinc-400 mb-4 uppercase tracking-wider">
-                    Average Sleep Stages
-                  </h4>
-                  <div className="space-y-4">
-                    {/* Visual bar - reusing SleepStagesBar component */}
-                    <SleepStagesBar stages={stats.stages} className="h-3" />
-
-                    {/* Legend */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {(['deep', 'rem', 'light', 'awake'] as const).map(
-                        (stage) => {
-                          const key =
-                            `${stage}_minutes` as keyof typeof stats.stages;
-                          const minutes = stats.stages![key] || 0;
-                          const percent = (minutes / stats.stagesTotal) * 100;
-                          return (
-                            <div
-                              key={stage}
-                              className="flex items-center gap-2"
-                            >
+              {stats.avg_stages && (() => {
+                const stagesTotal =
+                  (stats.avg_stages.deep_minutes || 0) +
+                  (stats.avg_stages.rem_minutes || 0) +
+                  (stats.avg_stages.light_minutes || 0) +
+                  (stats.avg_stages.awake_minutes || 0);
+                // Convert SleepStagesAverage to SleepStagesSummary shape for the bar
+                const stagesForBar: SleepStagesSummary = {
+                  deep_minutes: stats.avg_stages.deep_minutes != null ? Math.round(stats.avg_stages.deep_minutes) : null,
+                  rem_minutes: stats.avg_stages.rem_minutes != null ? Math.round(stats.avg_stages.rem_minutes) : null,
+                  light_minutes: stats.avg_stages.light_minutes != null ? Math.round(stats.avg_stages.light_minutes) : null,
+                  awake_minutes: stats.avg_stages.awake_minutes != null ? Math.round(stats.avg_stages.awake_minutes) : null,
+                };
+                return stagesTotal > 0 ? (
+                  <div className="p-4 border border-zinc-800 rounded-lg bg-zinc-900/30">
+                    <h4 className="text-xs font-medium text-zinc-400 mb-4 uppercase tracking-wider">
+                      Average Sleep Stages
+                    </h4>
+                    <div className="space-y-4">
+                      <SleepStagesBar stages={stagesForBar} className="h-3" />
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {(['deep', 'rem', 'light', 'awake'] as const).map(
+                          (stage) => {
+                            const minutes = stats.avg_stages![`${stage}_minutes`] || 0;
+                            const percent = (minutes / stagesTotal) * 100;
+                            return (
                               <div
-                                className={`w-3 h-3 rounded-sm ${SLEEP_STAGE_COLORS[stage as SleepStageKey]}`}
-                              />
-                              <span className="text-xs text-zinc-300">
-                                {SLEEP_STAGE_LABELS[stage as SleepStageKey]}
-                              </span>
-                              <span className="text-xs text-zinc-500 ml-auto">
-                                {Math.round(percent)}%
-                              </span>
-                            </div>
-                          );
-                        }
-                      )}
+                                key={stage}
+                                className="flex items-center gap-2"
+                              >
+                                <div
+                                  className={`w-3 h-3 rounded-sm ${SLEEP_STAGE_COLORS[stage as SleepStageKey]}`}
+                                />
+                                <span className="text-xs text-zinc-300">
+                                  {SLEEP_STAGE_LABELS[stage as SleepStageKey]}
+                                </span>
+                                <span className="text-xs text-zinc-500 ml-auto">
+                                  {Math.round(percent)}%
+                                </span>
+                              </div>
+                            );
+                          }
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                ) : null;
+              })()}
             </div>
           )}
         </div>

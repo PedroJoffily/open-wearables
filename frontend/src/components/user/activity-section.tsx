@@ -13,7 +13,10 @@ import {
   MoveHorizontal,
   Armchair,
 } from 'lucide-react';
-import { useActivitySummaries } from '@/hooks/api/use-health';
+import {
+  useActivitySummaries,
+  useActivityStats,
+} from '@/hooks/api/use-health';
 import { useCursorPagination } from '@/hooks/use-cursor-pagination';
 import { useDateRange, useAllTimeRange } from '@/hooks/use-date-range';
 import type { DateRangeValue } from '@/components/ui/date-range-selector';
@@ -32,13 +35,11 @@ import {
   formatMinutes,
 } from '@/lib/utils/format';
 import {
-  calculateActivityStats,
   getActivityDetailFields,
   ACTIVITY_METRIC_CHART_COLORS,
-  type ActivityStats,
   type ActivityMetricKey,
 } from '@/lib/utils/activity';
-import type { ActivitySummary } from '@/lib/api/types';
+import type { ActivitySummary, ActivityStatsResponse } from '@/lib/api/types';
 
 interface ActivitySectionProps {
   userId: string;
@@ -56,7 +57,7 @@ interface MetricDefinition {
   color: string;
   bgColor: string;
   glowColor: string;
-  getValue: (stats: ActivityStats) => number | null;
+  getValue: (stats: ActivityStatsResponse) => number | null;
   formatValue: (value: number | null) => string;
   getChartValue: (summary: ActivitySummary) => number;
   unit: string;
@@ -71,7 +72,7 @@ const METRICS: MetricDefinition[] = [
     color: 'text-emerald-400',
     bgColor: 'bg-emerald-500/10',
     glowColor: 'shadow-[0_0_15px_rgba(16,185,129,0.5)]',
-    getValue: (stats) => stats.totalSteps,
+    getValue: (stats) => stats.total_steps,
     formatValue: formatNumber,
     getChartValue: (s) => s.steps || 0,
     unit: '',
@@ -84,7 +85,7 @@ const METRICS: MetricDefinition[] = [
     color: 'text-orange-400',
     bgColor: 'bg-orange-500/10',
     glowColor: 'shadow-[0_0_15px_rgba(249,115,22,0.5)]',
-    getValue: (stats) => stats.totalCalories,
+    getValue: (stats) => stats.total_calories,
     formatValue: formatNumber,
     getChartValue: (s) => s.active_calories_kcal || 0,
     unit: 'kcal',
@@ -97,7 +98,7 @@ const METRICS: MetricDefinition[] = [
     color: 'text-sky-400',
     bgColor: 'bg-sky-500/10',
     glowColor: 'shadow-[0_0_15px_rgba(14,165,233,0.5)]',
-    getValue: (stats) => stats.totalActiveMinutes,
+    getValue: (stats) => stats.total_active_minutes,
     formatValue: formatMinutes,
     getChartValue: (s) => s.active_minutes || 0,
     unit: 'min',
@@ -110,7 +111,7 @@ const METRICS: MetricDefinition[] = [
     color: 'text-rose-400',
     bgColor: 'bg-rose-500/10',
     glowColor: 'shadow-[0_0_15px_rgba(244,63,94,0.5)]',
-    getValue: (stats) => stats.avgHeartRate,
+    getValue: (stats) => stats.avg_heart_rate,
     formatValue: (v) => (v !== null ? Math.round(v).toString() : '-'),
     getChartValue: (s) => s.heart_rate?.avg_bpm || 0,
     unit: 'bpm',
@@ -123,7 +124,7 @@ const METRICS: MetricDefinition[] = [
     color: 'text-purple-400',
     bgColor: 'bg-purple-500/10',
     glowColor: 'shadow-[0_0_15px_rgba(168,85,247,0.5)]',
-    getValue: (stats) => stats.totalDistance,
+    getValue: (stats) => stats.total_distance_meters,
     formatValue: formatDistance,
     getChartValue: (s) => (s.distance_meters || 0) / 1000,
     unit: 'km',
@@ -136,7 +137,7 @@ const METRICS: MetricDefinition[] = [
     color: 'text-amber-400',
     bgColor: 'bg-amber-500/10',
     glowColor: 'shadow-[0_0_15px_rgba(245,158,11,0.5)]',
-    getValue: (stats) => stats.totalFloorsClimbed,
+    getValue: (stats) => stats.total_floors_climbed,
     formatValue: formatNumber,
     getChartValue: (s) => s.floors_climbed || 0,
     unit: '',
@@ -149,7 +150,7 @@ const METRICS: MetricDefinition[] = [
     color: 'text-zinc-400',
     bgColor: 'bg-zinc-500/10',
     glowColor: 'shadow-[0_0_15px_rgba(113,113,122,0.5)]',
-    getValue: (stats) => stats.totalSedentaryMinutes,
+    getValue: (stats) => stats.total_sedentary_minutes,
     formatValue: formatMinutes,
     getChartValue: (s) => s.sedentary_minutes || 0,
     unit: 'min',
@@ -329,15 +330,18 @@ export function ActivitySection({
   const { startDate, endDate } = useDateRange(dateRange);
   const allTimeRange = useAllTimeRange();
 
-  // Fetch activity summaries for summary stats (date range filtered)
-  const { data: summaryData, isLoading: summaryLoading } = useActivitySummaries(
-    userId,
-    {
-      start_date: startDate,
-      end_date: endDate,
-      limit: dateRange,
-    }
-  );
+  // Fetch aggregated activity stats from backend (server-side aggregation)
+  const { data: stats, isLoading: summaryLoading } = useActivityStats(userId, {
+    start_date: startDate,
+    end_date: endDate,
+  });
+
+  // Fetch activity summaries for chart data (date range filtered)
+  const { data: summaryData } = useActivitySummaries(userId, {
+    start_date: startDate,
+    end_date: endDate,
+    limit: dateRange,
+  });
 
   // Fetch activity days with cursor-based pagination (newest first)
   const {
@@ -357,12 +361,6 @@ export function ActivitySection({
 
   const handleNextPage = () => pagination.goToNextPage(nextCursor);
   const handlePrevPage = pagination.goToPrevPage;
-
-  // Calculate aggregate statistics from date-range filtered data
-  const stats = useMemo(
-    () => calculateActivityStats(summaryData?.data || []),
-    [summaryData]
-  );
 
   // Get displayed days from current page data (sorted by backend via sort_order=desc)
   const displayedDays = useMemo(() => daysData?.data || [], [daysData]);
@@ -429,7 +427,7 @@ export function ActivitySection({
                   icon={Activity}
                   iconColor="text-indigo-400"
                   iconBgColor="bg-indigo-500/10"
-                  value={String(stats.daysTracked)}
+                  value={String(stats.days_tracked)}
                   label="Days Tracked"
                 />
               </div>

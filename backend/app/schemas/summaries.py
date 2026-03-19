@@ -158,3 +158,30 @@ class RecoverySummary(BaseModel):
     avg_hrv_sdnn_ms: float | None = Field(None, description="Average HRV (SDNN)")
     avg_spo2_percent: float | None = None
     recovery_score: int | None = Field(None, ge=0, le=100, description="0-100 score")
+
+
+class ActivityStatsResponse(BaseModel):
+    total_steps: int
+    avg_steps: int
+    total_calories: float
+    avg_calories: float
+    total_distance_meters: float
+    total_active_minutes: int
+    total_floors_climbed: int
+    total_sedentary_minutes: int
+    avg_heart_rate: float | None
+    days_tracked: int
+
+
+class SleepStagesAverage(BaseModel):
+    deep_minutes: float | None = None
+    rem_minutes: float | None = None
+    light_minutes: float | None = None
+    awake_minutes: float | None = None
+
+
+class SleepStatsResponse(BaseModel):
+    avg_duration_minutes: float | None
+    avg_efficiency_percent: float | None
+    nights_tracked: int
+    avg_stages: SleepStagesAverage | None

@@ -1,6 +1,5 @@
 import type {
   SleepSession,
-  SleepSummary,
   SleepStagesSummary,
 } from '@/lib/api/types';
 import { formatMinutes } from './format';
@@ -95,104 +94,6 @@ export function getSleepStageData(
       label: SLEEP_STAGE_LABELS.awake,
     },
   ];
-}
-
-/**
- * Aggregated sleep statistics
- */
-export interface SleepStats {
-  avgDuration: number | null;
-  avgEfficiency: number | null;
-  nightsTracked: number;
-  avgBedtime: number | null;
-  stages: SleepStagesSummary | null;
-  stagesTotal: number;
-}
-
-/**
- * Calculate aggregated statistics from sleep summaries
- */
-export function calculateSleepStats(
-  summaries: SleepSummary[]
-): SleepStats | null {
-  if (summaries.length === 0) {
-    return null;
-  }
-
-  // Filter out null values for averaging
-  const durations = summaries
-    .map((s) => s.duration_minutes)
-    .filter((d): d is number => d !== null);
-  const efficiencies = summaries
-    .map((s) => s.efficiency_percent)
-    .filter((e): e is number => e !== null);
-
-  // Aggregate sleep stages (calculate averages)
-  const totalDeep = summaries.reduce(
-    (acc, s) => acc + (s.stages?.deep_minutes || 0),
-    0
-  );
-  const totalRem = summaries.reduce(
-    (acc, s) => acc + (s.stages?.rem_minutes || 0),
-    0
-  );
-  const totalLight = summaries.reduce(
-    (acc, s) => acc + (s.stages?.light_minutes || 0),
-    0
-  );
-  const totalAwake = summaries.reduce(
-    (acc, s) => acc + (s.stages?.awake_minutes || 0),
-    0
-  );
-  const nightCount = summaries.length;
-  const avgDeep = nightCount > 0 ? totalDeep / nightCount : 0;
-  const avgRem = nightCount > 0 ? totalRem / nightCount : 0;
-  const avgLight = nightCount > 0 ? totalLight / nightCount : 0;
-  const avgAwake = nightCount > 0 ? totalAwake / nightCount : 0;
-  const avgStagesTotal = avgDeep + avgRem + avgLight + avgAwake;
-
-  // Calculate average bedtime
-  const bedtimes = summaries
-    .map((s) => s.start_time)
-    .filter((t): t is string => t !== null)
-    .map((t) => {
-      const date = new Date(t);
-      // Convert to minutes from midnight, handling late night times
-      let minutes = date.getHours() * 60 + date.getMinutes();
-      // If before 6am, treat as previous day's evening
-      if (minutes < 360) minutes += 1440;
-      return minutes;
-    });
-
-  const avgBedtimeMinutes =
-    bedtimes.length > 0
-      ? bedtimes.reduce((a, b) => a + b, 0) / bedtimes.length
-      : null;
-
-  return {
-    avgDuration:
-      durations.length > 0
-        ? durations.reduce((a, b) => a + b, 0) / durations.length
-        : null,
-    avgEfficiency:
-      efficiencies.length > 0
-        ? efficiencies.reduce((a, b) => a + b, 0) / efficiencies.length
-        : null,
-    nightsTracked: summaries.length,
-    avgBedtime: avgBedtimeMinutes,
-    // Use SleepStagesSummary format so we can reuse SleepStagesBar
-    // Store averages (not totals) so tooltip shows avg per night
-    stages:
-      avgStagesTotal > 0
-        ? {
-            deep_minutes: avgDeep,
-            rem_minutes: avgRem,
-            light_minutes: avgLight,
-            awake_minutes: avgAwake,
-          }
-        : null,
-    stagesTotal: avgStagesTotal,
-  };
 }
 
 /**

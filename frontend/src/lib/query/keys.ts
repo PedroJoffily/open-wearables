@@ -73,8 +73,12 @@ export const queryKeys = {
       [...queryKeys.health.all, 'sleepSessions', userId, params] as const,
     sleepSummaries: (userId: string, params?: unknown) =>
       [...queryKeys.health.all, 'sleepSummaries', userId, params] as const,
+    sleepStats: (userId: string, params?: unknown) =>
+      [...queryKeys.health.all, 'sleepStats', userId, params] as const,
     activitySummaries: (userId: string, params?: unknown) =>
       [...queryKeys.health.all, 'activitySummaries', userId, params] as const,
+    activityStats: (userId: string, params?: unknown) =>
+      [...queryKeys.health.all, 'activityStats', userId, params] as const,
     bodySummary: (userId: string, params?: unknown) =>
       [...queryKeys.health.all, 'bodySummary', userId, params] as const,
     activity: (userId: string, days: number) =>
@@ -83,6 +87,8 @@ export const queryKeys = {
       [...queryKeys.health.all, 'summary', userId, period] as const,
     workouts: (userId: string, params?: HealthDataParams) =>
       [...queryKeys.health.all, 'workouts', userId, params] as const,
+    workoutStats: (userId: string, params?: unknown) =>
+      [...queryKeys.health.all, 'workoutStats', userId, params] as const,
     timeseries: (userId: string, params?: unknown) =>
       [...queryKeys.health.all, 'timeseries', userId, params] as const,
   },

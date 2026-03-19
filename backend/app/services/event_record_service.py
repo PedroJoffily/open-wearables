@@ -1,3 +1,4 @@
+from datetime import datetime
 from logging import Logger, getLogger
 from uuid import UUID
 
@@ -23,6 +24,7 @@ from app.schemas.events import (
     SleepSession,
     Workout,
     WorkoutDetailed,
+    WorkoutStats,
 )
 from app.schemas.summaries import SleepStagesSummary
 from app.schemas.workout_types import WORKOUTS_WITH_PACE
@@ -206,6 +208,19 @@ class EventRecordService(
                 end_time=params.end_datetime,
             ),
         )
+
+    @handle_exceptions
+    def get_workout_stats(
+        self,
+        db_session: DbSession,
+        user_id: UUID,
+        start_date: datetime,
+        end_date: datetime,
+    ) -> WorkoutStats | None:
+        result = self.crud.get_workout_stats(db_session, user_id, start_date, end_date)
+        if result is None:
+            return None
+        return WorkoutStats(**result)
 
     @handle_exceptions
     def get_workout_detailed(

@@ -10,12 +10,15 @@ import type {
   SyncResponse,
   GarminBackfillStatus,
   ActivitySummary,
+  ActivityStatsResponse,
   SleepSummary,
+  SleepStatsResponse,
   BodySummary,
   BodySummaryParams,
   RecoverySummary,
   SleepSession,
   SleepSessionsParams,
+  WorkoutStatsResponse,
 } from '../types';
 
 export interface WorkoutsParams {
@@ -127,6 +130,45 @@ export const healthService = {
       {
         params,
       }
+    );
+  },
+
+  /**
+   * Get aggregated workout statistics for a user
+   */
+  async getWorkoutStats(
+    userId: string,
+    params: { start_date: string; end_date: string }
+  ): Promise<WorkoutStatsResponse | null> {
+    return apiClient.get<WorkoutStatsResponse | null>(
+      API_ENDPOINTS.userWorkoutStats(userId),
+      { params }
+    );
+  },
+
+  /**
+   * Get aggregated activity statistics for a date range
+   */
+  async getActivityStats(
+    userId: string,
+    params: { start_date: string; end_date: string }
+  ): Promise<ActivityStatsResponse | null> {
+    return apiClient.get<ActivityStatsResponse | null>(
+      API_ENDPOINTS.userActivityStats(userId),
+      { params }
+    );
+  },
+
+  /**
+   * Get aggregated sleep statistics for a date range
+   */
+  async getSleepStats(
+    userId: string,
+    params: { start_date: string; end_date: string }
+  ): Promise<SleepStatsResponse | null> {
+    return apiClient.get<SleepStatsResponse | null>(
+      API_ENDPOINTS.userSleepStats(userId),
+      { params }
     );
   },
 

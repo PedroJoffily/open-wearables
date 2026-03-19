@@ -228,47 +228,6 @@ export function getWorkoutDetailFields(
 }
 
 /**
- * Aggregated workout statistics
- */
-export interface WorkoutStats {
-  count: number;
-  totalDuration: number;
-  totalCalories: number;
-  totalDistance: number;
-}
-
-/**
- * Calculate aggregated statistics from workouts
- */
-export function calculateWorkoutStats(
-  workouts: EventRecordResponse[]
-): WorkoutStats | null {
-  if (workouts.length === 0) {
-    return null;
-  }
-
-  const totalDuration = workouts.reduce(
-    (sum, w) => sum + (Number(w.duration_seconds) || 0),
-    0
-  );
-  const totalCalories = workouts.reduce(
-    (sum, w) => sum + (Number(w.calories_kcal) || 0),
-    0
-  );
-  const totalDistance = workouts.reduce(
-    (sum, w) => sum + (Number(w.distance_meters) || 0),
-    0
-  );
-
-  return {
-    count: workouts.length,
-    totalDuration,
-    totalCalories,
-    totalDistance,
-  };
-}
-
-/**
  * Convert Date to unix timestamp string (seconds)
  */
 export function dateToTimestamp(date: Date): string {

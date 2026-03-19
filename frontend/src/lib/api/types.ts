@@ -539,6 +539,40 @@ export interface EventRecordResponse {
   sleep_awake_minutes?: number | string | null;
 }
 
+export interface WorkoutStatsResponse {
+  count: number;
+  total_duration_seconds: number;
+  total_calories_kcal: number;
+  total_distance_meters: number;
+}
+
+export interface ActivityStatsResponse {
+  total_steps: number;
+  avg_steps: number;
+  total_calories: number;
+  avg_calories: number;
+  total_distance_meters: number;
+  total_active_minutes: number;
+  total_floors_climbed: number;
+  total_sedentary_minutes: number;
+  avg_heart_rate: number | null;
+  days_tracked: number;
+}
+
+export interface SleepStagesAverage {
+  deep_minutes: number | null;
+  rem_minutes: number | null;
+  light_minutes: number | null;
+  awake_minutes: number | null;
+}
+
+export interface SleepStatsResponse {
+  avg_duration_minutes: number | null;
+  avg_efficiency_percent: number | null;
+  nights_tracked: number;
+  avg_stages: SleepStagesAverage | null;
+}
+
 export interface HealthDataParams {
   start_datetime?: string;
   end_datetime?: string;

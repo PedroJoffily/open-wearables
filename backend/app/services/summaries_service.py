@@ -23,6 +23,7 @@ from app.schemas.device_type import infer_device_type_from_model
 from app.schemas.oauth import ProviderName
 from app.schemas.series_types import SeriesType, get_series_type_id
 from app.schemas.summaries import (
+    ActivityStatsResponse,
     ActivitySummary,
     BloodPressure,
     BodyAveraged,
@@ -31,7 +32,9 @@ from app.schemas.summaries import (
     BodySummary,
     HeartRateStats,
     IntensityMinutes,
+    SleepStagesAverage,
     SleepStagesSummary,
+    SleepStatsResponse,
     SleepSummary,
 )
 from app.utils.exceptions import handle_exceptions
@@ -358,32 +361,18 @@ class SummariesService:
             ),
         )
 
-    @handle_exceptions
-    def get_activity_summaries(
+    def _get_activity_summaries_unpaginated(
         self,
         db_session: DbSession,
         user_id: UUID,
         start_date: datetime,
         end_date: datetime,
-        cursor: str | None,
-        limit: int,
-        sort_order: str = "asc",
-    ) -> PaginatedResponse[ActivitySummary]:
-        """Get daily activity summaries aggregated by date, provider, and device.
+    ) -> list[ActivitySummary]:
+        """Load and enrich activity summaries without pagination.
 
-        Aggregates include:
-        - Steps (sum from time-series)
-        - Distance (sum from time-series)
-        - Calories (active + basal from time-series)
-        - Elevation (from workouts total_elevation_gain)
-        - Floors (from flights_climbed time-series OR elevation)
-        - Heart rate stats (avg, max, min)
-        - Active/sedentary minutes (based on step threshold)
-        - Intensity minutes (HR zones using max HR = 220 - age):
-          light 50-63%, moderate 64-76%, vigorous 77-93%
+        Returns all ActivitySummary records for the date range after priority filtering.
+        Used by both get_activity_summaries (paginated) and get_activity_stats (aggregated).
         """
-        self.logger.debug(f"Fetching activity summaries for user {user_id} from {start_date} to {end_date}")
-
         # Get aggregated data from time-series repository (live data)
         results = self.data_point_repo.get_daily_activity_aggregates(db_session, user_id, start_date, end_date)
 
@@ -416,7 +405,6 @@ class SummariesService:
             activity_lookup[key] = am
 
         # Get intensity minutes from HR data
-        # Calculate HR zone thresholds based on user's max HR (220 - age)
         max_hr = self._get_user_max_hr(db_session, user_id, start_date)
         hr_zones = self._get_hr_zone_thresholds(max_hr)
         intensity_minutes_data = self.data_point_repo.get_daily_intensity_minutes(
@@ -436,86 +424,16 @@ class SummariesService:
             key = (im["activity_date"], im["source"], im.get("device_model"))
             intensity_lookup[key] = im
 
-        # Sort results based on sort_order (default ascending from DB)
-        if sort_order == "desc":
-            results = list(reversed(results))
-
-        # Apply cursor-based pagination using compound key (date, provider, device)
-        # This ensures we don't skip records when multiple providers exist for the same date
-        if cursor:
-            cursor_date, cursor_provider, cursor_device, direction = decode_activity_cursor(cursor)
-            cursor_key = (cursor_date, cursor_provider, cursor_device or "")
-
-            if direction == "prev":
-                # Backward pagination: get items BEFORE cursor key (in current sort order)
-                if sort_order == "desc":
-                    # In desc order, "before" means items with GREATER keys
-                    results = [
-                        r
-                        for r in results
-                        if (r["activity_date"], r["source"] or "", r.get("device_model") or "") > cursor_key
-                    ]
-                else:
-                    results = [
-                        r
-                        for r in results
-                        if (r["activity_date"], r["source"] or "", r.get("device_model") or "") < cursor_key
-                    ]
-                # Reverse to get correct order for backward pagination
-                results = list(reversed(results))
-            else:
-                # Forward pagination: get items AFTER cursor key (in current sort order)
-                if sort_order == "desc":
-                    # In desc order, "after" means items with SMALLER keys
-                    results = [
-                        r
-                        for r in results
-                        if (r["activity_date"], r["source"] or "", r.get("device_model") or "") < cursor_key
-                    ]
-                else:
-                    results = [
-                        r
-                        for r in results
-                        if (r["activity_date"], r["source"] or "", r.get("device_model") or "") > cursor_key
-                    ]
-
-        # Check for more data
-        has_more = len(results) > limit
-        if has_more:
-            results = results[:limit]
-
-        # Generate cursors
-        next_cursor: str | None = None
-        previous_cursor: str | None = None
-
-        if results:
-            # Next cursor points to last item's compound key
-            if has_more:
-                last = results[-1]
-                next_cursor = encode_activity_cursor(
-                    last["activity_date"], last["source"] or "unknown", last.get("device_model"), "next"
-                )
-
-            # Previous cursor if we had a cursor (not first page)
-            if cursor:
-                first = results[0]
-                previous_cursor = encode_activity_cursor(
-                    first["activity_date"], first["source"] or "unknown", first.get("device_model"), "prev"
-                )
-
         # Transform to schema
         data = []
         for result in results:
-            # Look up workout data for this day/provider/device
             result_key = (result["activity_date"], result["source"], result.get("device_model"))
             workout_data = workout_lookup.get(result_key, {})
             activity_data = activity_lookup.get(result_key, {})
             intensity_data = intensity_lookup.get(result_key, {})
 
-            # Get elevation from workouts
             elevation_meters = workout_data.get("elevation_meters")
 
-            # Calculate floors: prefer flights_climbed from time-series, fallback to elevation
             flights_climbed = result.get("flights_climbed_sum")
             if flights_climbed is not None:
                 floors_climbed = flights_climbed
@@ -524,13 +442,9 @@ class SummariesService:
             else:
                 floors_climbed = None
 
-            # Distance from time-series only
-            # Note: workout distance (from WorkoutDetails) is typically a subset of daily distance,
-            # not additive - providers report daily totals that include workout distance
             ts_distance = result.get("distance_sum")
             total_distance = float(ts_distance) if ts_distance is not None else None
 
-            # Build heart rate stats if available
             hr_stats = None
             if result.get("hr_avg") is not None:
                 hr_stats = HeartRateStats(
@@ -539,20 +453,15 @@ class SummariesService:
                     min_bpm=result.get("hr_min"),
                 )
 
-            # Calculate total calories from time-series data
-            # Note: workout energy (from WorkoutDetails) is typically a subset of active_energy,
-            # not additive - providers report daily totals that include workout calories
             active_cal = result.get("active_energy_sum")
             basal_cal = result.get("basal_energy_sum")
             total_cal = None
             if active_cal is not None or basal_cal is not None:
                 total_cal = (active_cal or 0.0) + (basal_cal or 0.0)
 
-            # Get active/sedentary minutes
             active_mins = activity_data.get("active_minutes")
             sedentary_mins = activity_data.get("sedentary_minutes")
 
-            # Get intensity minutes from HR data
             intensity_mins = None
             if intensity_data:
                 light = intensity_data.get("light_minutes", 0)
@@ -581,6 +490,79 @@ class SummariesService:
             )
             data.append(summary)
 
+        return data
+
+    @handle_exceptions
+    def get_activity_summaries(
+        self,
+        db_session: DbSession,
+        user_id: UUID,
+        start_date: datetime,
+        end_date: datetime,
+        cursor: str | None,
+        limit: int,
+        sort_order: str = "asc",
+    ) -> PaginatedResponse[ActivitySummary]:
+        """Get daily activity summaries aggregated by date, provider, and device.
+
+        Aggregates include:
+        - Steps (sum from time-series)
+        - Distance (sum from time-series)
+        - Calories (active + basal from time-series)
+        - Elevation (from workouts total_elevation_gain)
+        - Floors (from flights_climbed time-series OR elevation)
+        - Heart rate stats (avg, max, min)
+        - Active/sedentary minutes (based on step threshold)
+        - Intensity minutes (HR zones using max HR = 220 - age):
+          light 50-63%, moderate 64-76%, vigorous 77-93%
+        """
+        self.logger.debug(f"Fetching activity summaries for user {user_id} from {start_date} to {end_date}")
+
+        data = self._get_activity_summaries_unpaginated(db_session, user_id, start_date, end_date)
+
+        # Sort results based on sort_order (default ascending)
+        if sort_order == "desc":
+            data = list(reversed(data))
+
+        # Apply cursor-based pagination using compound key (date, provider, device)
+        if cursor:
+            cursor_date, cursor_provider, cursor_device, direction = decode_activity_cursor(cursor)
+            cursor_key = (cursor_date, cursor_provider, cursor_device or "")
+
+            if direction == "prev":
+                if sort_order == "desc":
+                    data = [s for s in data if (s.date, s.source.provider or "", s.source.device or "") > cursor_key]
+                else:
+                    data = [s for s in data if (s.date, s.source.provider or "", s.source.device or "") < cursor_key]
+                data = list(reversed(data))
+            else:
+                if sort_order == "desc":
+                    data = [s for s in data if (s.date, s.source.provider or "", s.source.device or "") < cursor_key]
+                else:
+                    data = [s for s in data if (s.date, s.source.provider or "", s.source.device or "") > cursor_key]
+
+        # Check for more data
+        has_more = len(data) > limit
+        if has_more:
+            data = data[:limit]
+
+        # Generate cursors
+        next_cursor: str | None = None
+        previous_cursor: str | None = None
+
+        if data:
+            if has_more:
+                last = data[-1]
+                next_cursor = encode_activity_cursor(
+                    last.date, last.source.provider or "unknown", last.source.device, "next"
+                )
+
+            if cursor:
+                first = data[0]
+                previous_cursor = encode_activity_cursor(
+                    first.date, first.source.provider or "unknown", first.source.device, "prev"
+                )
+
         return PaginatedResponse(
             data=data,
             pagination=Pagination(
@@ -593,6 +575,96 @@ class SummariesService:
                 start_time=start_date,
                 end_time=end_date,
             ),
+        )
+
+    @handle_exceptions
+    def get_activity_stats(
+        self,
+        db_session: DbSession,
+        user_id: UUID,
+        start_date: datetime,
+        end_date: datetime,
+    ) -> ActivityStatsResponse | None:
+        """Get aggregated activity statistics for a date range."""
+        summaries = self._get_activity_summaries_unpaginated(db_session, user_id, start_date, end_date)
+        if not summaries:
+            return None
+
+        total_steps = sum(s.steps or 0 for s in summaries)
+        total_calories = sum(s.active_calories_kcal or 0 for s in summaries)
+        total_distance = sum(s.distance_meters or 0 for s in summaries)
+        total_active_minutes = sum(s.active_minutes or 0 for s in summaries)
+        total_floors_climbed = sum(s.floors_climbed or 0 for s in summaries)
+        total_sedentary_minutes = sum(s.sedentary_minutes or 0 for s in summaries)
+
+        days_with_steps = sum(1 for s in summaries if s.steps is not None)
+        days_with_calories = sum(1 for s in summaries if s.active_calories_kcal is not None)
+
+        heart_rates = [s.heart_rate.avg_bpm for s in summaries if s.heart_rate and s.heart_rate.avg_bpm is not None]
+        avg_heart_rate = sum(heart_rates) / len(heart_rates) if heart_rates else None
+
+        return ActivityStatsResponse(
+            total_steps=total_steps,
+            avg_steps=round(total_steps / days_with_steps) if days_with_steps > 0 else 0,
+            total_calories=total_calories,
+            avg_calories=round(total_calories / days_with_calories, 1) if days_with_calories > 0 else 0,
+            total_distance_meters=total_distance,
+            total_active_minutes=total_active_minutes,
+            total_floors_climbed=total_floors_climbed,
+            total_sedentary_minutes=total_sedentary_minutes,
+            avg_heart_rate=round(avg_heart_rate, 1) if avg_heart_rate is not None else None,
+            days_tracked=len(summaries),
+        )
+
+    @handle_exceptions
+    def get_sleep_stats(
+        self,
+        db_session: DbSession,
+        user_id: UUID,
+        start_date: datetime,
+        end_date: datetime,
+    ) -> SleepStatsResponse | None:
+        """Get aggregated sleep statistics for a date range.
+
+        Fetches all sleep summaries, applies priority filtering, and aggregates.
+        Skips per-night HR enrichment (not needed for stats).
+        """
+        results = self.event_record_repo.get_sleep_summaries(
+            db_session, user_id, start_date, end_date, cursor=None, limit=1000
+        )
+        results = self._filter_by_priority(db_session, user_id, results, date_key="sleep_date")
+
+        if not results:
+            return None
+
+        durations = [r["total_duration_minutes"] for r in results if r.get("total_duration_minutes") is not None]
+        efficiencies = [r["efficiency_percent"] for r in results if r.get("efficiency_percent") is not None]
+
+        avg_duration = sum(durations) / len(durations) if durations else None
+        avg_efficiency = sum(efficiencies) / len(efficiencies) if efficiencies else None
+
+        # Aggregate sleep stages (averages)
+        night_count = len(results)
+        total_deep = sum(r.get("deep_minutes") or 0 for r in results)
+        total_rem = sum(r.get("rem_minutes") or 0 for r in results)
+        total_light = sum(r.get("light_minutes") or 0 for r in results)
+        total_awake = sum(r.get("awake_minutes") or 0 for r in results)
+        stages_total = total_deep + total_rem + total_light + total_awake
+
+        avg_stages = None
+        if stages_total > 0:
+            avg_stages = SleepStagesAverage(
+                deep_minutes=round(total_deep / night_count, 1),
+                rem_minutes=round(total_rem / night_count, 1),
+                light_minutes=round(total_light / night_count, 1),
+                awake_minutes=round(total_awake / night_count, 1),
+            )
+
+        return SleepStatsResponse(
+            avg_duration_minutes=round(avg_duration, 1) if avg_duration is not None else None,
+            avg_efficiency_percent=round(avg_efficiency, 1) if avg_efficiency is not None else None,
+            nights_tracked=night_count,
+            avg_stages=avg_stages,
         )
 
     def _calculate_age(self, birth_date: date, reference_date: date) -> int:

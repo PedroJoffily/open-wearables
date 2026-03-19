@@ -22,6 +22,8 @@ export const API_ENDPOINTS = {
   userConnectionDisconnect: (userId: string, provider: string) =>
     `/api/v1/users/${userId}/connections/${provider}`,
   userWorkouts: (userId: string) => `/api/v1/users/${userId}/events/workouts`,
+  userWorkoutStats: (userId: string) =>
+    `/api/v1/users/${userId}/events/workouts/stats`,
   userAppleXmlImport: (userId: string) =>
     `/api/v1/users/${userId}/import/apple/xml/direct`,
   userAppleXmlPresignedUrl: (userId: string) =>
@@ -75,8 +77,12 @@ export const API_ENDPOINTS = {
   // Summary endpoints (authenticated - requires user authorization)
   userActivitySummary: (userId: string) =>
     `/api/v1/users/${userId}/summaries/activity`,
+  userActivityStats: (userId: string) =>
+    `/api/v1/users/${userId}/summaries/activity/stats`,
   userSleepSummary: (userId: string) =>
     `/api/v1/users/${userId}/summaries/sleep`,
+  userSleepStats: (userId: string) =>
+    `/api/v1/users/${userId}/summaries/sleep/stats`,
   userBodySummary: (userId: string) => `/api/v1/users/${userId}/summaries/body`,
   userRecoverySummary: (userId: string) =>
     `/api/v1/users/${userId}/summaries/recovery`,

@@ -63,6 +63,15 @@ class Measurement(BaseModel):
     values: dict[str, float | str] = Field(..., description="Measurement-specific values", example={"weight_kg": 72.5})
 
 
+class WorkoutStats(BaseModel):
+    """Aggregated workout statistics computed via SQL."""
+
+    count: int
+    total_duration_seconds: int
+    total_calories_kcal: float
+    total_distance_meters: float
+
+
 class SleepSession(BaseModel):
     id: UUID
     start_time: datetime

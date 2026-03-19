@@ -9,12 +9,30 @@ from app.schemas.event_record import EventRecordQueryParams
 from app.schemas.events import (
     SleepSession,
     Workout,
+    WorkoutStats,
 )
 from app.services import ApiKeyDep
 from app.services.event_record_service import event_record_service
 from app.utils.dates import parse_query_datetime
 
 router = APIRouter()
+
+
+@router.get("/users/{user_id}/events/workouts/stats")
+def get_workout_stats(
+    user_id: UUID,
+    start_date: str,
+    end_date: str,
+    db: DbSession,
+    _api_key: ApiKeyDep,
+) -> WorkoutStats | None:
+    """Returns aggregated workout statistics for a date range."""
+    return event_record_service.get_workout_stats(
+        db,
+        user_id,
+        parse_query_datetime(start_date),
+        parse_query_datetime(end_date),
+    )
 
 
 @router.get("/users/{user_id}/events/workouts")
