@@ -19,7 +19,7 @@ class OWClient:
     """
 
     def _headers(self) -> dict[str, str]:
-        return {"X-API-Key": settings.ow_api_key.get_secret_value()}
+        return {"X-Open-Wearables-API-Key": settings.ow_api_key.get_secret_value()}
 
     def _base(self) -> str:
         return settings.ow_api_url.rstrip("/")
