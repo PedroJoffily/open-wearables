@@ -1,14 +1,15 @@
-from collections.abc import Callable
+import inspect
+from collections.abc import Awaitable, Callable
 from functools import singledispatch, wraps
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, overload
 from uuid import UUID
+
+if TYPE_CHECKING:
+    from app.services import AppService
 
 from fastapi.exceptions import HTTPException, RequestValidationError
 from psycopg.errors import IntegrityError as PsycopgIntegrityError
 from sqlalchemy.exc import IntegrityError as SQLAIntegrityError
-
-if TYPE_CHECKING:
-    from app.services import AppService
 
 
 class ResourceNotFoundError(Exception):
@@ -18,6 +19,21 @@ class ResourceNotFoundError(Exception):
             self.detail = f"{entity_name.capitalize()} with ID: {entity_id} not found."
         else:
             self.detail = f"{entity_name.capitalize()} not found."
+
+
+class AccessDeniedError(Exception):
+    def __init__(self, entity_name: str):
+        self.detail = f"Access to {entity_name} denied."
+
+
+class GoneError(Exception):
+    def __init__(self, detail: str):
+        self.detail = detail
+
+
+class ConflictError(Exception):
+    def __init__(self, detail: str):
+        self.detail = detail
 
 
 @singledispatch
@@ -39,6 +55,21 @@ def _(exc: ResourceNotFoundError, _: str) -> HTTPException:
 
 
 @handle_exception.register
+def _(exc: AccessDeniedError, _: str) -> HTTPException:
+    return HTTPException(status_code=403, detail=exc.detail)
+
+
+@handle_exception.register
+def _(exc: GoneError, _: str) -> HTTPException:
+    return HTTPException(status_code=410, detail=exc.detail)
+
+
+@handle_exception.register
+def _(exc: ConflictError, _: str) -> HTTPException:
+    return HTTPException(status_code=409, detail=exc.detail)
+
+
+@handle_exception.register
 def _(exc: AttributeError, entity: str) -> HTTPException:
     return HTTPException(
         status_code=400,
@@ -50,18 +81,45 @@ def _(exc: AttributeError, entity: str) -> HTTPException:
 def _(exc: RequestValidationError, _: str) -> HTTPException:
     err_args = exc.args[0][0]
     msg = err_args.get("msg", "Validation error")
-    ctx_error = err_args.get("ctx", {}).get("error", "")
-    detail = f"{msg} - {ctx_error}" if ctx_error else msg
-    return HTTPException(status_code=422, detail=detail)
+    ctx = err_args.get("ctx", {})
+    error = ctx.get("error", "") if ctx else ""
+    detail = f"{msg} - {error}" if error else msg
+    return HTTPException(status_code=400, detail=detail)
 
 
-def handle_exceptions[**P, T, Service: AppService](func: Callable[P, T]) -> Callable[P, T]:
+@overload
+def handle_exceptions[**P, T, Service: AppService](
+    func: Callable[P, Awaitable[T]],
+) -> Callable[P, Awaitable[T]]: ...
+
+
+@overload
+def handle_exceptions[**P, T, Service: AppService](
+    func: Callable[P, T],
+) -> Callable[P, T]: ...
+
+
+def handle_exceptions[**P, T, Service: AppService](
+    func: Callable[P, T] | Callable[P, Awaitable[T]],
+) -> Callable[P, T] | Callable[P, Awaitable[T]]:
+    if inspect.iscoroutinefunction(func):
+
+        @wraps(func)
+        async def async_wrapper(instance: Service, *args: P.args, **kwargs: P.kwargs) -> T:
+            try:
+                return await func(instance, *args, **kwargs)  # ty: ignore[invalid-argument-type]
+            except Exception as exc:
+                entity_name = getattr(instance, "name", "unknown")
+                raise handle_exception(exc, entity_name) from exc
+
+        return async_wrapper  # ty: ignore[invalid-return-type]
+
     @wraps(func)
-    def async_wrapper(instance: Service, *args: P.args, **kwargs: P.kwargs) -> T:
+    def sync_wrapper(instance: Service, *args: P.args, **kwargs: P.kwargs) -> T:
         try:
-            return func(instance, *args, **kwargs)  # type: ignore
+            return func(instance, *args, **kwargs)  # ty: ignore[invalid-argument-type, invalid-return-type]
         except Exception as exc:
             entity_name = getattr(instance, "name", "unknown")
             raise handle_exception(exc, entity_name) from exc
 
-    return async_wrapper  # type: ignore
+    return sync_wrapper  # ty: ignore[invalid-return-type]

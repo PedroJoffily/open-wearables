@@ -1,7 +1,6 @@
 import logging
 from uuid import UUID
 
-from fastapi import HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,14 +13,24 @@ from app.repositories import (
     session_repository,
 )
 from app.schemas.agent import ConversationStatus, MessageRole
+from app.utils.exceptions import (
+    AccessDeniedError,
+    ConflictError,
+    GoneError,
+    ResourceNotFoundError,
+    handle_exceptions,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class ConversationService:
+    name = "conversation"
+
     def __init__(self, db: AsyncDbSession) -> None:
         self._db = db
 
+    @handle_exceptions
     async def upsert(
         self,
         user_id: UUID,
@@ -67,43 +76,46 @@ class ConversationService:
         logger.info(f"Created conversation {conversation.id} and session {new_session.id} for user {user_id}")
         return conversation, new_session
 
+    @handle_exceptions
     async def get_active(self, conversation_id: UUID, user_id: UUID) -> tuple[Conversation, Session]:
         """Validate and return the active conversation + session."""
         conversation = await conversation_repository.get_by_id(self._db, conversation_id)
 
         if conversation is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found.")
+            raise ResourceNotFoundError("conversation", conversation_id)
 
         if conversation.user_id != user_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied.")
+            raise AccessDeniedError("conversation")
 
         if conversation.status == ConversationStatus.CLOSED:
-            raise HTTPException(status_code=status.HTTP_410_GONE, detail="Conversation is closed.")
+            raise GoneError("Conversation is closed.")
 
         session = await session_repository.get_active_by_conversation_id(self._db, conversation_id)
 
         if session is None:
-            raise HTTPException(status_code=status.HTTP_410_GONE, detail="No active session.")
+            raise GoneError("No active session.")
 
         return conversation, session
 
+    @handle_exceptions
     async def deactivate(self, conversation_id: UUID, user_id: UUID) -> Conversation:
         conversation = await conversation_repository.get_by_id(self._db, conversation_id)
 
         if conversation is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found.")
+            raise ResourceNotFoundError("conversation", conversation_id)
 
         if conversation.user_id != user_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied.")
+            raise AccessDeniedError("conversation")
 
         session = await session_repository.get_active_by_conversation_id(self._db, conversation_id)
 
         if session is None:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="No active session to deactivate.")
+            raise ConflictError("No active session to deactivate.")
 
         await session_repository.deactivate(self._db, session)
         return conversation
 
+    @handle_exceptions
     async def save_messages(
         self,
         conversation_id: UUID,
@@ -130,6 +142,7 @@ class ConversationService:
             self._db.add(conversation)
             await self._db.commit()
 
+    @handle_exceptions
     async def build_history(self, conversation: Conversation, db: AsyncSession) -> list[dict[str, str]]:
         """Return message history for the LLM, summarizing if over threshold.
 
