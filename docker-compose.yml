@@ -222,7 +222,21 @@ services:
           path: ./frontend/vite.config.ts
     restart: on-failure
 
+  ai-backend:
+    build:
+      context: ./services/ai-backend
+    container_name: ai-backend__open-wearables
+    ports:
+      - "${AI_BACKEND_PORT:-8081}:8080"
+    env_file:
+      - ./services/ai-backend/.env
+    depends_on:
+      app:
+        condition: service_started
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   redis_data:
   svix_secrets:
+  ai_backend_data:

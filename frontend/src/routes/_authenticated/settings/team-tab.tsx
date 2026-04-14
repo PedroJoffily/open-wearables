@@ -135,12 +135,12 @@ export function TeamTab() {
 
   if (isLoading) {
     return (
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+      <div className="bg-card border border-border rounded-xl p-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-10 bg-zinc-800 rounded-md w-full" />
+          <div className="h-10 bg-muted rounded-md w-full" />
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-16 bg-zinc-800/50 rounded-md" />
+              <div key={i} className="h-16 bg-muted/50 rounded-md" />
             ))}
           </div>
         </div>
@@ -169,8 +169,8 @@ export function TeamTab() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-medium text-white">Team Members</h2>
-          <p className="text-sm text-zinc-500 mt-1">
+          <h2 className="text-xl font-medium text-foreground">Team Members</h2>
+          <p className="text-sm text-foreground-muted mt-1">
             Manage your team and their access
           </p>
         </div>
@@ -182,13 +182,13 @@ export function TeamTab() {
 
       {/* Pending Invitations */}
       {activeInvitations && activeInvitations.length > 0 && (
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-zinc-800">
-            <h3 className="text-sm font-medium text-white flex items-center gap-2">
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-border">
+            <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
               <Clock className="h-4 w-4 text-amber-500" />
               Pending Invitations
             </h3>
-            <p className="text-xs text-zinc-500 mt-1">
+            <p className="text-xs text-foreground-muted mt-1">
               Invitations that are waiting to be accepted
             </p>
           </div>
@@ -196,40 +196,40 @@ export function TeamTab() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-zinc-800 text-left">
-                  <th className="px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                <tr className="border-b border-border text-left">
+                  <th className="px-6 py-3 text-xs font-medium text-foreground-muted uppercase tracking-wider">
                     Email
                   </th>
-                  <th className="px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium text-foreground-muted uppercase tracking-wider">
                     Sent
                   </th>
-                  <th className="px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium text-foreground-muted uppercase tracking-wider">
                     Expires
                   </th>
-                  <th className="px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium text-foreground-muted uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider text-right">
+                  <th className="px-6 py-3 text-xs font-medium text-foreground-muted uppercase tracking-wider text-right">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800/50">
+              <tbody className="divide-y divide-border">
                 {activeInvitations.map((invitation) => (
                   <tr
                     key={invitation.id}
-                    className="hover:bg-zinc-800/30 transition-colors"
+                    className="hover:bg-secondary/50 transition-colors"
                   >
-                    <td className="px-6 py-4 text-sm font-medium text-zinc-300">
+                    <td className="px-6 py-4 text-sm font-medium text-foreground">
                       <div className="flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-zinc-500" />
+                        <Mail className="h-4 w-4 text-foreground-muted" />
                         {invitation.email}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-xs text-zinc-500">
+                    <td className="px-6 py-4 text-xs text-foreground-muted">
                       {formatDate(invitation.created_at)}
                     </td>
-                    <td className="px-6 py-4 text-xs text-zinc-500">
+                    <td className="px-6 py-4 text-xs text-foreground-muted">
                       {formatDate(invitation.expires_at)}
                     </td>
                     <td className="px-6 py-4">
@@ -237,9 +237,9 @@ export function TeamTab() {
                         className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium uppercase ${
                           invitation.status === 'sent' ||
                           invitation.status === 'pending'
-                            ? 'bg-emerald-500/20 text-emerald-400'
+                            ? 'bg-emerald-500/20 text-status-online'
                             : invitation.status === 'failed'
-                              ? 'bg-red-500/20 text-red-400'
+                              ? 'bg-red-500/20 text-destructive'
                               : 'bg-amber-500/20 text-amber-400'
                         }`}
                       >
@@ -282,10 +282,10 @@ export function TeamTab() {
       )}
 
       {/* Team Members Table */}
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-zinc-800">
-          <h3 className="text-sm font-medium text-white">Developers</h3>
-          <p className="text-xs text-zinc-500 mt-1">
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-border">
+          <h3 className="text-sm font-medium text-foreground">Developers</h3>
+          <p className="text-xs text-foreground-muted mt-1">
             All team members with access to this organization
           </p>
         </div>
@@ -294,31 +294,31 @@ export function TeamTab() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-zinc-800 text-left">
-                  <th className="px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                <tr className="border-b border-border text-left">
+                  <th className="px-6 py-3 text-xs font-medium text-foreground-muted uppercase tracking-wider">
                     Name
                   </th>
-                  <th className="px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium text-foreground-muted uppercase tracking-wider">
                     Email
                   </th>
-                  <th className="px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium text-foreground-muted uppercase tracking-wider">
                     ID
                   </th>
-                  <th className="px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium text-foreground-muted uppercase tracking-wider">
                     Created At
                   </th>
-                  <th className="px-6 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider text-right">
+                  <th className="px-6 py-3 text-xs font-medium text-foreground-muted uppercase tracking-wider text-right">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800/50">
+              <tbody className="divide-y divide-border">
                 {developers.map((developer) => (
                   <tr
                     key={developer.id}
-                    className="hover:bg-zinc-800/30 transition-colors"
+                    className="hover:bg-secondary/50 transition-colors"
                   >
-                    <td className="px-6 py-4 text-sm text-zinc-300">
+                    <td className="px-6 py-4 text-sm text-foreground">
                       {developer.first_name || developer.last_name ? (
                         <span>
                           {[developer.first_name, developer.last_name]
@@ -326,15 +326,15 @@ export function TeamTab() {
                             .join(' ')}
                         </span>
                       ) : (
-                        <span className="text-zinc-600">—</span>
+                        <span className="text-foreground-muted">—</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium text-zinc-300">
+                    <td className="px-6 py-4 text-sm font-medium text-foreground">
                       {developer.email}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <code className="font-mono text-xs bg-zinc-800 text-zinc-300 px-2 py-1 rounded">
+                        <code className="font-mono text-xs bg-muted text-foreground px-2 py-1 rounded">
                           {truncateId(developer.id)}
                         </code>
                         <Button
@@ -344,14 +344,14 @@ export function TeamTab() {
                           title="Copy ID"
                         >
                           {copiedId === developer.id ? (
-                            <Check className="h-3 w-3 text-emerald-500" />
+                            <Check className="h-3 w-3 text-status-online" />
                           ) : (
                             <Copy className="h-3 w-3" />
                           )}
                         </Button>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-xs text-zinc-500">
+                    <td className="px-6 py-4 text-xs text-foreground-muted">
                       {formatDate(developer.created_at)}
                     </td>
                     <td className="px-6 py-4">
@@ -381,9 +381,9 @@ export function TeamTab() {
           </div>
         ) : (
           <div className="p-12 text-center">
-            <Users className="h-12 w-12 text-zinc-700 mx-auto mb-4" />
-            <p className="text-zinc-400 mb-2">No team members yet</p>
-            <p className="text-sm text-zinc-500 mb-4">
+            <Users className="h-12 w-12 text-foreground-secondary mx-auto mb-4" />
+            <p className="text-foreground-secondary mb-2">No team members yet</p>
+            <p className="text-sm text-foreground-muted mb-4">
               Invite your first team member to get started
             </p>
             <Button
@@ -413,7 +413,7 @@ export function TeamTab() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-1.5 py-4">
-            <Label htmlFor="invite_email" className="text-xs text-zinc-300">
+            <Label htmlFor="invite_email" className="text-xs text-foreground">
               Email Address
             </Label>
             <Input
@@ -431,9 +431,9 @@ export function TeamTab() {
                   handleInvite();
                 }
               }}
-              className="bg-zinc-800 border-zinc-700"
+              className="bg-muted border-border-hover"
             />
-            <p className="text-[10px] text-zinc-600">
+            <p className="text-[10px] text-foreground-muted">
               They will receive an email with instructions to join
             </p>
           </div>
@@ -471,7 +471,7 @@ export function TeamTab() {
             <DialogTitle>Remove Team Member</DialogTitle>
             <DialogDescription>
               Are you sure you want to remove{' '}
-              <span className="font-medium text-zinc-300">
+              <span className="font-medium text-foreground">
                 {deleteTarget?.email}
               </span>{' '}
               from the team? This action cannot be undone.
@@ -503,7 +503,7 @@ export function TeamTab() {
             <DialogTitle>Revoke Invitation</DialogTitle>
             <DialogDescription>
               Are you sure you want to revoke the invitation for{' '}
-              <span className="font-medium text-zinc-300">
+              <span className="font-medium text-foreground">
                 {revokeTarget?.email}
               </span>
               ? They will no longer be able to join.

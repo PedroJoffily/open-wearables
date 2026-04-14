@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 import {
   useReactTable,
   getCoreRowModel,
@@ -12,6 +12,7 @@ import {
 } from '@tanstack/react-table';
 import {
   Search,
+  Eye,
   Trash2,
   Copy,
   Check,
@@ -20,15 +21,15 @@ import {
   ChevronsUpDown,
   Link as LinkIcon,
   Loader2,
+  Upload,
+  Circle,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import type { UserRead, UserQueryParams } from '@/lib/api/types';
-import { ROUTES } from '@/lib/constants/routes';
 import { copyToClipboard } from '@/lib/utils/clipboard';
-import { truncateId } from '@/lib/utils/format';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useAppleXmlUpload } from '@/hooks/api/use-users';
 import {
   Pagination,
   PaginationContent,
@@ -53,10 +54,34 @@ interface UsersTableProps {
 
 const columnToSortBy: Record<string, UserQueryParams['sort_by']> = {
   created_at: 'created_at',
+  email: 'email',
   first_name: 'first_name',
   name: 'first_name',
-  last_synced_at: 'last_synced_at',
 };
+
+function getInitials(firstName: string | null, lastName: string | null): string {
+  const f = firstName?.charAt(0)?.toUpperCase() || '';
+  const l = lastName?.charAt(0)?.toUpperCase() || '';
+  return f + l || '?';
+}
+
+const avatarColors = [
+  'bg-indigo-100 text-indigo-700',
+  'bg-emerald-100 text-emerald-700',
+  'bg-amber-100 text-amber-700',
+  'bg-rose-100 text-rose-700',
+  'bg-sky-100 text-sky-700',
+  'bg-violet-100 text-violet-700',
+  'bg-teal-100 text-teal-700',
+];
+
+function getAvatarColor(id: string): string {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return avatarColors[Math.abs(hash) % avatarColors.length];
+}
 
 export function UsersTable({
   data,
@@ -78,9 +103,11 @@ export function UsersTable({
   });
   const [globalFilter, setGlobalFilter] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedPairLink, setCopiedPairLink] = useState<string | null>(null);
-  const navigate = useNavigate();
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  const { handleUpload, uploadingUserId } = useAppleXmlUpload();
+
   const onQueryChangeRef = useRef(onQueryChange);
   useEffect(() => {
     onQueryChangeRef.current = onQueryChange;
@@ -118,16 +145,8 @@ export function UsersTable({
     });
   }, [pagination, sorting, debouncedSearch]);
 
-  const handleCopyId = async (id: string) => {
-    const success = await copyToClipboard(id, 'User ID copied to clipboard');
-    if (success) {
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 2000);
-    }
-  };
-
   const handleCopyPairLink = async (userId: string) => {
-    const pairLink = `${window.location.origin}${ROUTES.users}/${userId}/pair`;
+    const pairLink = `${window.location.origin}/users/${userId}/pair`;
     const success = await copyToClipboard(
       pairLink,
       'Pairing link copied to clipboard'
@@ -136,6 +155,10 @@ export function UsersTable({
       setCopiedPairLink(userId);
       setTimeout(() => setCopiedPairLink(null), 2000);
     }
+  };
+
+  const handleUploadClick = (userId: string) => {
+    fileInputRefs.current[userId]?.click();
   };
 
   const SortableHeader = ({
@@ -153,7 +176,7 @@ export function UsersTable({
 
     if (!isSortable) {
       return (
-        <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
+        <span className="text-xs font-medium text-foreground-muted uppercase tracking-wider">
           {children}
         </span>
       );
@@ -161,7 +184,7 @@ export function UsersTable({
 
     return (
       <button
-        className="flex items-center gap-1 text-xs font-medium text-zinc-500 uppercase tracking-wider hover:text-zinc-300 transition-colors"
+        className="flex items-center gap-1 text-xs font-medium text-foreground-muted uppercase tracking-wider hover:text-foreground-secondary transition-colors"
         onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
       >
         {children}
@@ -178,61 +201,65 @@ export function UsersTable({
 
   const columns: ColumnDef<UserRead>[] = [
     {
-      accessorKey: 'id',
+      id: 'member',
+      accessorFn: (row) =>
+        `${row.first_name || ''} ${row.last_name || ''}`.trim(),
+      header: ({ column }) => (
+        <SortableHeader column={column}>Member</SortableHeader>
+      ),
+      cell: ({ row }) => {
+        const fullName =
+          `${row.original.first_name || ''} ${row.original.last_name || ''}`.trim();
+        const initials = getInitials(
+          row.original.first_name,
+          row.original.last_name
+        );
+        const colorClass = getAvatarColor(row.original.id);
+        return (
+          <Link
+            to="/users/$userId"
+            params={{ userId: row.original.id }}
+            className="flex items-center gap-3 group"
+          >
+            <div
+              className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 ${colorClass}`}
+            >
+              {initials}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors truncate">
+                {fullName || 'Unnamed Member'}
+              </p>
+              <p className="text-xs text-foreground-muted truncate">
+                {row.original.email || 'No email'}
+              </p>
+            </div>
+          </Link>
+        );
+      },
+    },
+    {
+      id: 'status',
       header: () => (
-        <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
-          User ID
+        <span className="text-xs font-medium text-foreground-muted uppercase tracking-wider">
+          Status
         </span>
       ),
-      cell: ({ row }) => (
-        <div
-          className="flex items-center gap-2"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <code className="font-mono text-xs bg-zinc-800 text-zinc-300 px-2 py-1 rounded">
-            {truncateId(row.original.id)}
-          </code>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => handleCopyId(row.original.id)}
-          >
-            {copiedId === row.original.id ? (
-              <Check className="h-3 w-3 text-emerald-500" />
-            ) : (
-              <Copy className="h-3 w-3" />
-            )}
-          </Button>
+      cell: () => (
+        <div className="flex items-center gap-1.5">
+          <Circle className="h-2 w-2 fill-status-online text-status-online" />
+          <span className="text-xs text-foreground-secondary">Active</span>
         </div>
       ),
       enableSorting: false,
     },
     {
-      id: 'name',
-      accessorFn: (row) =>
-        `${row.first_name || ''} ${row.last_name || ''}`.trim(),
-      header: ({ column }) => (
-        <SortableHeader column={column}>Name</SortableHeader>
-      ),
-      cell: ({ row }) => {
-        const fullName =
-          `${row.original.first_name || ''} ${row.original.last_name || ''}`.trim();
-        return (
-          <span
-            className={fullName ? 'text-sm text-zinc-300' : 'text-zinc-600'}
-          >
-            {fullName || '—'}
-          </span>
-        );
-      },
-    },
-    {
       accessorKey: 'created_at',
       header: ({ column }) => (
-        <SortableHeader column={column}>Created</SortableHeader>
+        <SortableHeader column={column}>Joined</SortableHeader>
       ),
       cell: ({ row }) => (
-        <span className="text-xs text-zinc-500">
+        <span className="text-xs text-foreground-muted">
           {formatDistanceToNow(new Date(row.original.created_at), {
             addSuffix: true,
           })}
@@ -240,42 +267,41 @@ export function UsersTable({
       ),
     },
     {
-      accessorKey: 'last_synced_at',
-      header: ({ column }) => (
-        <SortableHeader column={column}>Last Synced</SortableHeader>
-      ),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs text-zinc-500">
-            {row.original.last_synced_at
-              ? formatDistanceToNow(new Date(row.original.last_synced_at), {
-                  addSuffix: true,
-                })
-              : 'Never'}
-          </span>
-          {row.original.last_synced_provider && (
-            <Badge
-              variant="outline"
-              className="text-[10px] px-1.5 py-0 capitalize"
-            >
-              {row.original.last_synced_provider}
-            </Badge>
-          )}
-        </div>
-      ),
-    },
-    {
       id: 'actions',
       header: () => (
-        <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider text-right block">
+        <span className="text-xs font-medium text-foreground-muted uppercase tracking-wider text-right block">
           Actions
         </span>
       ),
       cell: ({ row }) => (
-        <div
-          className="flex justify-end gap-1"
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="flex justify-end gap-1">
+          <Button variant="outline" size="icon" asChild>
+            <Link to="/users/$userId" params={{ userId: row.original.id }}>
+              <Eye className="h-4 w-4" />
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => handleUploadClick(row.original.id)}
+            disabled={uploadingUserId === row.original.id}
+            title="Upload Apple Health XML"
+          >
+            {uploadingUserId === row.original.id ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4" />
+            )}
+          </Button>
+          <input
+            ref={(el) => {
+              fileInputRefs.current[row.original.id] = el;
+            }}
+            type="file"
+            accept=".xml"
+            onChange={(e) => handleUpload(row.original.id, e)}
+            className="hidden"
+          />
           <Button
             variant="outline"
             size="icon"
@@ -283,7 +309,7 @@ export function UsersTable({
             title="Copy pairing link"
           >
             {copiedPairLink === row.original.id ? (
-              <Check className="h-4 w-4 text-emerald-500" />
+              <Check className="h-4 w-4 text-status-online" />
             ) : (
               <LinkIcon className="h-4 w-4" />
             )}
@@ -293,7 +319,6 @@ export function UsersTable({
             size="icon"
             onClick={() => onDelete(row.original.id)}
             disabled={isDeleting}
-            title="Delete user"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -358,19 +383,19 @@ export function UsersTable({
   };
 
   return (
-    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
-      <div className="p-4 border-b border-zinc-800">
+    <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="p-4 border-b border-border">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground-muted" />
           <Input
             type="text"
-            placeholder="Search by name or email..."
+            placeholder="Search members by name or email..."
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
-            className="bg-zinc-900 border-zinc-800 px-9"
+            className="bg-secondary border-border px-9"
           />
           {isLoading && (
-            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 animate-spin" />
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground-muted animate-spin" />
           )}
         </div>
       </div>
@@ -381,7 +406,7 @@ export function UsersTable({
             {table.getHeaderGroups().map((headerGroup) => (
               <tr
                 key={headerGroup.id}
-                className="border-b border-zinc-800 text-left"
+                className="border-b border-border text-left"
               >
                 {headerGroup.headers.map((header) => (
                   <th key={header.id} className="px-4 py-3">
@@ -396,14 +421,14 @@ export function UsersTable({
               </tr>
             ))}
           </thead>
-          <tbody className="divide-y divide-zinc-800/50">
+          <tbody className="divide-y divide-border">
             {table.getRowModel().rows.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="px-4 py-12 text-center">
-                  <p className="text-zinc-400">
+                  <p className="text-foreground-secondary">
                     {globalFilter
-                      ? 'No users match your search criteria.'
-                      : 'No users found'}
+                      ? 'No members match your search criteria.'
+                      : 'No members found'}
                   </p>
                 </td>
               </tr>
@@ -411,24 +436,7 @@ export function UsersTable({
               table.getRowModel().rows.map((row) => (
                 <tr
                   key={row.id}
-                  role="link"
-                  tabIndex={0}
-                  className="hover:bg-zinc-800/30 transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-zinc-500"
-                  onClick={() =>
-                    navigate({
-                      to: `${ROUTES.users}/$userId`,
-                      params: { userId: row.original.id },
-                    })
-                  }
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      navigate({
-                        to: `${ROUTES.users}/$userId`,
-                        params: { userId: row.original.id },
-                      });
-                    }
-                  }}
+                  className="hover:bg-secondary/50 transition-colors"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="px-4 py-3">
@@ -446,20 +454,20 @@ export function UsersTable({
       </div>
 
       {pageCount > 0 && (
-        <div className="p-4 border-t border-zinc-800 flex items-center justify-between">
-          <div className="text-sm text-zinc-500">
+        <div className="p-4 border-t border-border flex items-center justify-between">
+          <div className="text-sm text-foreground-muted">
             Showing{' '}
-            <span className="font-medium text-zinc-300">
+            <span className="font-medium text-foreground">
               {total === 0 ? 0 : pagination.pageIndex * pagination.pageSize + 1}
             </span>{' '}
             to{' '}
-            <span className="font-medium text-zinc-300">
+            <span className="font-medium text-foreground">
               {Math.min(
                 (pagination.pageIndex + 1) * pagination.pageSize,
                 total
               )}
             </span>{' '}
-            of <span className="font-medium text-zinc-300">{total}</span> users
+            of <span className="font-medium text-foreground">{total}</span> members
           </div>
 
           {pageCount > 1 && (

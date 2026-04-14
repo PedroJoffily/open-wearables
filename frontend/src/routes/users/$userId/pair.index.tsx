@@ -11,10 +11,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { useOAuthConnect } from '@/hooks/use-oauth-connect';
 import { useOAuthProviders } from '@/hooks/api/use-oauth-providers';
-import { useUserConnections } from '@/hooks/api/use-health';
 import { useMemo } from 'react';
 import { API_CONFIG } from '@/lib/api/config';
-import { isAuthenticated } from '@/lib/auth/session';
 
 export const Route = createFileRoute('/users/$userId/pair/')({
   component: PairWearablePage,
@@ -34,14 +32,6 @@ function PairWearablePage() {
     useOAuthConnect({ userId, redirectUrl });
 
   const { data: apiProviders, isLoading } = useOAuthProviders(true, true);
-  const { data: connections } = useUserConnections(userId, isAuthenticated());
-
-  const connectedProviders = useMemo(() => {
-    if (!connections) return new Set<string>();
-    return new Set(
-      connections.filter((c) => c.status === 'active').map((c) => c.provider)
-    );
-  }, [connections]);
 
   const displayProviders = useMemo(() => {
     if (!apiProviders) return [];
@@ -54,10 +44,9 @@ function PairWearablePage() {
           ? `${API_CONFIG.baseUrl}${apiProvider.icon_url}`
           : '',
         isAvailable: apiProvider.is_enabled,
-        isConnected: connectedProviders.has(apiProvider.provider),
       };
     });
-  }, [apiProviders, connectedProviders]);
+  }, [apiProviders]);
 
   const connectingProviderData = connectingProvider
     ? displayProviders.find((p) => p.id === connectingProvider)
@@ -70,7 +59,7 @@ function PairWearablePage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-200 flex flex-col items-center justify-center p-6 relative overflow-hidden selection:bg-white/20">
+    <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-6 relative overflow-hidden selection:bg-white/20">
       {/* Ambient Background Effect */}
       <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.1),rgba(255,255,255,0))] pointer-events-none" />
 
@@ -81,10 +70,10 @@ function PairWearablePage() {
         transition={{ duration: 0.4 }}
         className="relative z-10 text-center mb-14 space-y-3"
       >
-        <h1 className="text-4xl font-medium text-white tracking-tight">
+        <h1 className="text-4xl font-medium text-foreground tracking-tight">
           Connect a device
         </h1>
-        <p className="text-lg text-zinc-400">Select your wearable platform</p>
+        <p className="text-lg text-foreground-secondary">Select your wearable platform</p>
       </motion.div>
 
       {/* Error notification */}
@@ -96,7 +85,7 @@ function PairWearablePage() {
             exit={{ opacity: 0, y: -10 }}
             className="relative z-10 mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center gap-3 max-w-4xl w-full"
           >
-            <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+            <AlertCircle className="w-5 h-5 text-destructive shrink-0" />
             <p className="text-sm text-red-300 flex-1">{error}</p>
             <Button
               variant="destructive"
@@ -122,7 +111,7 @@ function PairWearablePage() {
           >
             {isLoading ? (
               <div className="col-span-2 flex justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-zinc-500" />
+                <Loader2 className="w-8 h-8 animate-spin text-foreground-muted" />
               </div>
             ) : (
               displayProviders
@@ -134,12 +123,7 @@ function PairWearablePage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05, duration: 0.3 }}
                     onClick={() => handleConnect(provider.id)}
-                    disabled={provider.isConnected}
-                    className={`group relative flex flex-col items-center text-center p-10 rounded-2xl bg-zinc-900/40 border transition-all duration-300 ease-out outline-none focus:ring-2 focus:ring-white/20 ${
-                      provider.isConnected
-                        ? 'border-emerald-500/20 cursor-default'
-                        : 'border-white/5 hover:bg-zinc-900/80 hover:border-white/10'
-                    }`}
+                    className="group relative flex flex-col items-center text-center p-10 rounded-2xl bg-secondary/40 border border-white/5 hover:bg-secondary/80 hover:border-white/10 transition-all duration-300 ease-out outline-none focus:ring-2 focus:ring-white/20"
                   >
                     {/* Brand Logo */}
                     <div className="mb-8 flex items-center justify-center h-20 w-20 bg-white rounded-2xl shadow-lg shadow-black/20 group-hover:scale-105 transition-transform duration-300">
@@ -151,28 +135,17 @@ function PairWearablePage() {
                     </div>
 
                     {/* Text */}
-                    <h3 className="text-xl font-medium text-white mb-3">
+                    <h3 className="text-xl font-medium text-foreground mb-3">
                       {provider.name}
                     </h3>
-                    <p className="text-base text-zinc-500 max-w-xs leading-relaxed">
+                    <p className="text-base text-foreground-muted max-w-xs leading-relaxed">
                       {provider.description}
                     </p>
 
                     {/* Connect indicator */}
-                    <div className="mt-8 flex items-center gap-1.5 text-base font-medium transition-colors">
-                      {provider.isConnected ? (
-                        <>
-                          <Check className="w-4 h-4 text-emerald-400" />
-                          <span className="text-emerald-400">Connected</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="text-zinc-200 group-hover:text-white">
-                            Connect
-                          </span>
-                          <ChevronRight className="w-4 h-4 stroke-[1.5] text-zinc-200 group-hover:text-white" />
-                        </>
-                      )}
+                    <div className="mt-8 flex items-center gap-1.5 text-base font-medium text-foreground group-hover:text-foreground transition-colors">
+                      <span>Connect</span>
+                      <ChevronRight className="w-4 h-4 stroke-[1.5]" />
                     </div>
                   </motion.button>
                 ))
@@ -194,7 +167,7 @@ function PairWearablePage() {
               aria-label={`Connecting to ${connectingProviderData.name}`}
               className="w-12 h-12 mx-auto mb-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
             />
-            <p className="text-zinc-400">
+            <p className="text-foreground-secondary">
               Connecting to {connectingProviderData.name}...
             </p>
           </motion.div>
@@ -217,18 +190,18 @@ function PairWearablePage() {
                 damping: 12,
                 delay: 0.1,
               }}
-              className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/20 flex items-center justify-center shadow-[0_0_30px_hsla(145,100%,50%,0.3)]"
+              className="w-16 h-16 mx-auto mb-4 rounded-full bg-success-muted flex items-center justify-center shadow-md"
             >
-              <Check className="w-8 h-8 text-green-500" />
+              <Check className="w-8 h-8 text-success" />
             </motion.div>
-            <h2 className="text-xl font-medium text-white mb-2">Connected</h2>
-            <p className="text-zinc-400 text-sm mb-6">
+            <h2 className="text-xl font-medium text-foreground mb-2">Connected</h2>
+            <p className="text-foreground-secondary text-sm mb-6">
               Your device will start syncing shortly
             </p>
             <Button
               variant="ghost"
               onClick={reset}
-              className="text-zinc-200 hover:text-white hover:bg-white/10"
+              className="text-foreground hover:text-foreground hover:bg-secondary"
             >
               Connect another device
             </Button>
@@ -241,7 +214,7 @@ function PairWearablePage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
-        className="mt-20 flex items-center gap-2 text-zinc-500 text-base font-normal opacity-80 hover:opacity-100 transition-opacity"
+        className="mt-20 flex items-center gap-2 text-foreground-muted text-base font-normal opacity-80 hover:opacity-100 transition-opacity"
       >
         <Lock className="w-4 h-4 stroke-[1.5]" />
         <span>Your data is encrypted and secure</span>

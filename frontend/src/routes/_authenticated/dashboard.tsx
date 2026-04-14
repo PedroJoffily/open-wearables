@@ -3,8 +3,9 @@ import { useDashboardStats } from '@/hooks/api/use-dashboard';
 import { useUsers } from '@/hooks/api/use-users';
 import {
   StatsGrid,
-  DataMetricsSection,
   RecentUsersSection,
+  AIRecommendationsPanel,
+  CoachTodoPanel,
   DashboardLoadingState,
   DashboardErrorState,
 } from '@/components/pages/dashboard';
@@ -33,29 +34,29 @@ function DashboardPage() {
     <div className="p-8 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-medium text-white">Dashboard</h1>
-        <p className="text-sm text-zinc-500 mt-1">
-          Your platform overview and key metrics
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          Dashboard
+        </h1>
+        <p className="text-sm text-foreground-secondary mt-1">
+          Your studio overview and member health metrics
         </p>
       </div>
 
       {/* Stats Grid */}
       <StatsGrid stats={stats} />
 
-      {/* Charts Section */}
-      <div className="grid gap-6 lg:grid-cols-7">
-        <DataMetricsSection
-          topSeriesTypes={stats.data_points.top_series_types}
-          topWorkoutTypes={stats.data_points.top_workout_types}
-          className="lg:col-span-4"
-        />
-        <RecentUsersSection
-          users={users?.items ?? []}
-          totalUsersCount={stats.total_users.count}
-          isLoading={isLoadingUsers}
-          className="lg:col-span-3"
-        />
+      {/* AI Recommendations + Coach To-Do */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <AIRecommendationsPanel />
+        <CoachTodoPanel />
       </div>
+
+      {/* Recent Members */}
+      <RecentUsersSection
+        users={users?.items ?? []}
+        totalUsersCount={stats.total_users.count}
+        isLoading={isLoadingUsers}
+      />
     </div>
   );
 }

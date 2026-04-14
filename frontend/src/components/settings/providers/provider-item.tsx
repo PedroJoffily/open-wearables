@@ -21,7 +21,7 @@ export function ProviderItem({
     : null;
 
   return (
-    <div className="px-6 py-4 hover:bg-zinc-800/30 transition-colors">
+    <div className="px-6 py-4 hover:bg-secondary/50 transition-colors">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4 flex-1">
           <div className="flex-shrink-0 p-2 rounded-lg overflow-hidden bg-white">
@@ -35,7 +35,7 @@ export function ProviderItem({
                 }}
               />
             ) : (
-              <div className="h-12 w-12 bg-white text-zinc-500 font-medium rounded-lg flex items-center justify-center">
+              <div className="h-12 w-12 bg-white text-foreground-muted font-medium rounded-lg flex items-center justify-center">
                 {provider.name.charAt(0).toUpperCase()}
               </div>
             )}
@@ -43,7 +43,7 @@ export function ProviderItem({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h4 className="text-sm font-medium text-white">
+              <h4 className="text-sm font-medium text-foreground">
                 {provider.name}
               </h4>
               {isEnabledInBackend ? (
@@ -51,7 +51,7 @@ export function ProviderItem({
                   Enabled
                 </span>
               ) : (
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-800 text-zinc-400">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-muted text-foreground-secondary">
                   Disabled
                 </span>
               )}

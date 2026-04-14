@@ -63,9 +63,9 @@ function SettingsPage() {
   return (
     <div className="p-8 space-y-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-medium text-white">Settings</h1>
-        <p className="text-sm text-zinc-500 mt-1">
-          Manage your settings and preferences
+        <h1 className="text-2xl font-medium text-foreground">Settings</h1>
+        <p className="text-sm text-foreground-muted mt-1">
+          Manage your studio settings and preferences
         </p>
       </div>
 

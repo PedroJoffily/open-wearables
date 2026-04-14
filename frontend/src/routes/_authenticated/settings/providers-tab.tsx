@@ -33,7 +33,7 @@ export function ProvidersTab() {
   }, [providers, hasInitialized]);
 
   const hasChanges = useMemo(() => {
-    if (!providers || !hasInitialized) return false;
+    if (!providers) return false;
 
     return providers.some(
       (provider) => localToggleStates[provider.provider] !== provider.is_enabled
@@ -54,9 +54,9 @@ export function ProvidersTab() {
 
   if (isLoading) {
     return (
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-12">
+      <div className="bg-card border border-border rounded-xl p-12">
         <div className="flex items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
+          <Loader2 className="h-6 w-6 animate-spin text-foreground-secondary" />
         </div>
       </div>
     );
@@ -64,8 +64,8 @@ export function ProvidersTab() {
 
   if (error) {
     return (
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-12 text-center">
-        <p className="text-zinc-400 mb-4">Failed to load OAuth providers</p>
+      <div className="bg-card border border-border rounded-xl p-12 text-center">
+        <p className="text-foreground-secondary mb-4">Failed to load OAuth providers</p>
         <Button variant="outline" onClick={() => refetch()}>
           Retry
         </Button>
@@ -75,48 +75,22 @@ export function ProvidersTab() {
 
   if (!providers || providers.length === 0) {
     return (
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-12 text-center">
-        <p className="text-zinc-400">No OAuth providers available</p>
+      <div className="bg-card border border-border rounded-xl p-12 text-center">
+        <p className="text-foreground-secondary">No OAuth providers available</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-medium text-white">OAuth Providers</h2>
-        <p className="text-sm text-zinc-500 mt-1">
-          Configure which OAuth providers are available to your end users
-        </p>
-      </div>
-
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-zinc-800">
-          <h3 className="text-sm font-medium text-white">
-            Available Providers
-          </h3>
-          <p className="text-xs text-zinc-500 mt-1">
-            Enable or disable OAuth providers for your application
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-medium text-foreground">OAuth Providers</h2>
+          <p className="text-sm text-foreground-muted mt-1">
+            Configure which OAuth providers are available to your end users
           </p>
         </div>
-
-        <div className="divide-y divide-zinc-800/50">
-          {providers.map((provider) => (
-            <ProviderItem
-              key={provider.provider}
-              provider={provider}
-              localToggleState={
-                localToggleStates[provider.provider] ?? provider.is_enabled
-              }
-              onToggle={() => handleToggleProvider(provider.provider)}
-            />
-          ))}
-        </div>
-      </div>
-
-      {hasChanges && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 rounded-lg border border-zinc-700 bg-zinc-900 px-6 py-3 shadow-lg shadow-black/50">
-          <p className="text-sm text-zinc-300">You have unsaved changes</p>
+        {hasChanges && (
           <Button onClick={handleSave} disabled={updateMutation.isPending}>
             {updateMutation.isPending ? (
               <>
@@ -130,8 +104,32 @@ export function ProvidersTab() {
               </>
             )}
           </Button>
+        )}
+      </div>
+
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-border">
+          <h3 className="text-sm font-medium text-foreground">
+            Available Providers
+          </h3>
+          <p className="text-xs text-foreground-muted mt-1">
+            Enable or disable OAuth providers for your application
+          </p>
         </div>
-      )}
+
+        <div className="divide-y divide-border">
+          {providers.map((provider) => (
+            <ProviderItem
+              key={provider.provider}
+              provider={provider}
+              localToggleState={
+                localToggleStates[provider.provider] ?? provider.is_enabled
+              }
+              onToggle={() => handleToggleProvider(provider.provider)}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

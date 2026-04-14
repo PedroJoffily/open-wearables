@@ -27,30 +27,30 @@ export function StatsCard({
   return (
     <div
       className={cn(
-        'bg-zinc-900/50 border border-zinc-800 rounded-xl p-6',
-        'hover:border-zinc-700 transition-colors group',
+        'bg-card border border-border rounded-xl p-6',
+        'hover:border-border-hover hover:shadow-md transition-all group',
         className
       )}
     >
       <div className="flex items-center justify-between mb-4">
-        <span className="text-sm font-medium text-zinc-400">{title}</span>
-        <Icon className="h-4 w-4 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+        <span className="text-sm font-medium text-foreground-secondary">{title}</span>
+        <Icon className="h-4 w-4 text-foreground-muted group-hover:text-foreground-secondary transition-colors" />
       </div>
-      <div className="text-2xl font-medium text-white">
+      <div className="text-2xl font-bold text-foreground">
         <NumberTicker
           value={value}
           decimalPlaces={decimalPlaces}
-          className="text-white"
+          className="text-foreground"
         />
-        {suffix && <span className="text-zinc-500 ml-0.5">{suffix}</span>}
+        {suffix && <span className="text-foreground-muted ml-0.5">{suffix}</span>}
       </div>
       <div className="flex items-center justify-between mt-2">
-        <p className="text-xs text-zinc-500">{description}</p>
+        <p className="text-xs text-foreground-muted">{description}</p>
         {growth !== undefined && (
           <div
             className={cn(
-              'flex items-center text-xs',
-              growth >= 0 ? 'text-emerald-400' : 'text-red-400'
+              'flex items-center text-xs font-medium',
+              growth >= 0 ? 'text-trend-positive' : 'text-trend-negative'
             )}
           >
             {growth >= 0 ? (

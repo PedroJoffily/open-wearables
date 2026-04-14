@@ -24,20 +24,20 @@ export function DataMetricsSection({
   return (
     <div
       className={cn(
-        'bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden',
+        'bg-card border border-border rounded-xl overflow-hidden',
         className
       )}
     >
-      <div className="px-6 py-4 border-b border-zinc-800">
-        <h2 className="text-sm font-medium text-white">Data Points Metrics</h2>
-        <p className="text-xs text-zinc-500 mt-1">
+      <div className="px-6 py-4 border-b border-border">
+        <h2 className="text-sm font-semibold text-foreground">Data Points Metrics</h2>
+        <p className="text-xs text-foreground-muted mt-1">
           Breakdown by series type and workout type
         </p>
       </div>
       <div className="p-6 space-y-6">
         {/* Top Series Types */}
         <div>
-          <h3 className="text-xs font-medium text-zinc-400 mb-3">
+          <h3 className="text-xs font-medium text-foreground-secondary mb-3">
             Top Series Types
           </h3>
           <div className="space-y-2">
@@ -48,27 +48,27 @@ export function DataMetricsSection({
                   className="flex items-center justify-between"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-zinc-500 w-4">
+                    <span className="text-xs text-foreground-muted w-4">
                       {index + 1}.
                     </span>
-                    <span className="text-sm text-zinc-300 capitalize">
+                    <span className="text-sm text-foreground-secondary capitalize">
                       {metric.series_type.replace(/_/g, ' ')}
                     </span>
                   </div>
-                  <span className="text-sm font-medium text-white">
+                  <span className="text-sm font-semibold font-data text-foreground">
                     {metric.count.toLocaleString()}
                   </span>
                 </div>
               ))
             ) : (
-              <p className="text-xs text-zinc-600">No data available</p>
+              <p className="text-xs text-foreground-muted">No data available</p>
             )}
           </div>
         </div>
 
         {/* Top Workout Types */}
         <div>
-          <h3 className="text-xs font-medium text-zinc-400 mb-3">
+          <h3 className="text-xs font-medium text-foreground-secondary mb-3">
             Top Workout Types
           </h3>
           <div className="space-y-2">
@@ -79,20 +79,20 @@ export function DataMetricsSection({
                   className="flex items-center justify-between"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-zinc-500 w-4">
+                    <span className="text-xs text-foreground-muted w-4">
                       {index + 1}.
                     </span>
-                    <span className="text-sm text-zinc-300">
+                    <span className="text-sm text-foreground-secondary">
                       {metric.workout_type || 'Unknown'}
                     </span>
                   </div>
-                  <span className="text-sm font-medium text-white">
+                  <span className="text-sm font-semibold font-data text-foreground">
                     {metric.count.toLocaleString()}
                   </span>
                 </div>
               ))
             ) : (
-              <p className="text-xs text-zinc-600">No data available</p>
+              <p className="text-xs text-foreground-muted">No data available</p>
             )}
           </div>
         </div>

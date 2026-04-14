@@ -38,7 +38,7 @@ function IndexRedirect() {
 
   // Always render the same content on both server and client to avoid hydration mismatch
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black">
+    <div className="min-h-screen flex items-center justify-center bg-sidebar">
       <LoadingSpinner size="lg" />
     </div>
   );

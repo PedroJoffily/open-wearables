@@ -11,7 +11,6 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useBodySummary } from '@/hooks/api/use-health';
-import { SourceBadge } from '@/components/common/source-badge';
 import {
   formatWeight,
   formatHeight,
@@ -56,17 +55,17 @@ function MetricCard({
   sublabelColor,
 }: MetricCardProps) {
   return (
-    <div className="p-4 border border-zinc-800 rounded-lg bg-zinc-900/30">
+    <div className="p-4 border border-border rounded-lg bg-secondary/30">
       <div className="flex items-center gap-3 mb-3">
         <div className={`p-2 ${iconBgColor} rounded-lg`}>
           <Icon className={`h-5 w-5 ${iconColor}`} />
         </div>
       </div>
-      <p className="text-2xl font-semibold text-white">{value}</p>
-      <p className="text-xs text-zinc-500 mt-1">
+      <p className="text-2xl font-semibold text-foreground">{value}</p>
+      <p className="text-xs text-foreground-muted mt-1">
         {label}
         {sublabel && (
-          <span className={`ml-1 ${sublabelColor ?? 'text-zinc-600'}`}>
+          <span className={`ml-1 ${sublabelColor ?? 'text-foreground-muted'}`}>
             ({sublabel})
           </span>
         )}
@@ -88,8 +87,8 @@ function PeriodToggle({ value, onChange }: PeriodToggleProps) {
   const getButtonClass = (period: 1 | 7) =>
     `px-2 py-1 text-xs rounded ${
       value === period
-        ? 'bg-zinc-700 text-white'
-        : 'text-zinc-500 hover:text-zinc-300'
+        ? 'bg-secondary-hover text-foreground'
+        : 'text-foreground-muted hover:text-foreground'
     }`;
 
   return (
@@ -115,11 +114,11 @@ function BodySectionSkeleton() {
         {[1, 2, 3, 4, 5].map((i) => (
           <div
             key={i}
-            className="p-4 border border-zinc-800 rounded-lg bg-zinc-900/30"
+            className="p-4 border border-border rounded-lg bg-secondary/30"
           >
-            <div className="h-5 w-5 bg-zinc-800 rounded animate-pulse mb-3" />
-            <div className="h-7 w-20 bg-zinc-800 rounded animate-pulse mb-1" />
-            <div className="h-4 w-16 bg-zinc-800/50 rounded animate-pulse" />
+            <div className="h-5 w-5 bg-muted rounded animate-pulse mb-3" />
+            <div className="h-7 w-20 bg-muted rounded animate-pulse mb-1" />
+            <div className="h-4 w-16 bg-muted/50 rounded animate-pulse" />
           </div>
         ))}
       </div>
@@ -127,11 +126,11 @@ function BodySectionSkeleton() {
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="p-4 border border-zinc-800 rounded-lg bg-zinc-900/30"
+            className="p-4 border border-border rounded-lg bg-secondary/30"
           >
-            <div className="h-5 w-5 bg-zinc-800 rounded animate-pulse mb-3" />
-            <div className="h-7 w-16 bg-zinc-800 rounded animate-pulse mb-1" />
-            <div className="h-4 w-20 bg-zinc-800/50 rounded animate-pulse" />
+            <div className="h-5 w-5 bg-muted rounded animate-pulse mb-3" />
+            <div className="h-7 w-16 bg-muted rounded animate-pulse mb-1" />
+            <div className="h-4 w-20 bg-muted/50 rounded animate-pulse" />
           </div>
         ))}
       </div>
@@ -158,15 +157,10 @@ export function BodySection({ userId }: BodySectionProps) {
   const bmiCategory = getBmiCategory(slowChangingData?.bmi);
 
   return (
-    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
-      <div className="px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-medium text-white">Body Metrics</h3>
-          {bodySummary?.source?.provider && (
-            <SourceBadge provider={bodySummary.source.provider} />
-          )}
-        </div>
-        <Scale className="h-4 w-4 text-zinc-500" />
+    <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+        <h3 className="text-sm font-medium text-foreground">Body Metrics</h3>
+        <Scale className="h-4 w-4 text-foreground-muted" />
       </div>
 
       <div className="p-6">
@@ -177,7 +171,7 @@ export function BodySection({ userId }: BodySectionProps) {
             {/* Slow-Changing - Body Composition */}
             <div>
               <div className="mb-4">
-                <h4 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                <h4 className="text-xs font-medium text-foreground-secondary uppercase tracking-wider">
                   Body Composition
                 </h4>
               </div>
@@ -207,7 +201,7 @@ export function BodySection({ userId }: BodySectionProps) {
                 />
                 <MetricCard
                   icon={Dumbbell}
-                  iconColor="text-emerald-400"
+                  iconColor="text-status-online"
                   iconBgColor="bg-emerald-500/10"
                   value={formatWeight(slowChangingData?.muscle_mass_kg ?? null)}
                   label="Muscle Mass"
@@ -227,7 +221,7 @@ export function BodySection({ userId }: BodySectionProps) {
             {/* Averaged - Vitals */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h4 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                <h4 className="text-xs font-medium text-foreground-secondary uppercase tracking-wider">
                   Vitals ({formatAveragePeriod(averagePeriod)})
                 </h4>
                 <PeriodToggle
@@ -256,7 +250,7 @@ export function BodySection({ userId }: BodySectionProps) {
             {/* Latest - Recent Readings */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h4 className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                <h4 className="text-xs font-medium text-foreground-secondary uppercase tracking-wider">
                   Recent Readings
                 </h4>
               </div>
@@ -270,16 +264,14 @@ export function BodySection({ userId }: BodySectionProps) {
                   )}
                   label="Body Temp"
                   sublabel={
-                    latestData?.body_temperature_measured_at
-                      ? formatLastUpdated(
-                          latestData.body_temperature_measured_at
-                        )
+                    latestData?.temperature_measured_at
+                      ? formatLastUpdated(latestData.temperature_measured_at)
                       : undefined
                   }
                 />
                 <MetricCard
                   icon={Activity}
-                  iconColor="text-red-400"
+                  iconColor="text-destructive"
                   iconBgColor="bg-red-500/10"
                   value={formatBloodPressure(latestData?.blood_pressure)}
                   label="Blood Pressure"

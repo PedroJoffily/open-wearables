@@ -33,7 +33,7 @@ export function TabsList({ children, className }: TabsListProps) {
   return (
     <div
       role="tablist"
-      className={`inline-flex h-10 items-center justify-center rounded-md bg-zinc-900/50 p-1 text-zinc-500 ${className || ''}`}
+      className={`inline-flex h-10 items-center justify-center rounded-md bg-card p-1 text-foreground-muted ${className || ''}`}
     >
       {children}
     </div>
@@ -62,10 +62,10 @@ export function TabsTrigger({ value, children, className }: TabsTriggerProps) {
       aria-selected={isActive}
       aria-controls={`panel-${value}`}
       onClick={() => context.onValueChange(value)}
-      className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-zinc-950 transition-all focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
+      className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
         isActive
-          ? 'bg-zinc-800 text-white shadow-sm'
-          : 'text-zinc-400 hover:text-zinc-300'
+          ? 'bg-muted text-foreground shadow-sm'
+          : 'text-foreground-secondary hover:text-foreground'
       } ${className || ''}`}
     >
       {children}
@@ -95,7 +95,7 @@ export function TabsContent({ value, children, className }: TabsContentProps) {
       id={`panel-${value}`}
       aria-labelledby={`tab-${value}`}
       tabIndex={0}
-      className={`mt-6 ring-offset-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 ${className || ''}`}
+      className={`mt-6 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border focus-visible:ring-offset-2 ${className || ''}`}
     >
       {children}
     </div>

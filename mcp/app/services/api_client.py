@@ -141,6 +141,24 @@ class OpenWearablesClient:
             params["record_type"] = record_type
         return await self._request("GET", f"/api/v1/users/{user_id}/events/workouts", params=params)
 
+    async def get_nutrition_summary(
+        self,
+        user_id: str,
+        date: str,
+    ) -> dict[str, Any]:
+        """
+        Get nutrition summary (intake + expenditure + budget) for a user on a date.
+
+        Args:
+            user_id: UUID of the user
+            date: Date in YYYY-MM-DD format
+
+        Returns:
+            Nutrition summary with expenditure, intake, and budget
+        """
+        params = {"date": date}
+        return await self._request("GET", f"/api/v1/users/{user_id}/summaries/nutrition", params=params)
+
     async def get_activity_summaries(
         self,
         user_id: str,

@@ -12,8 +12,8 @@ export function DashboardErrorState({
 }: DashboardErrorStateProps) {
   return (
     <div className={cn('p-8', className)}>
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-12 text-center">
-        <p className="text-zinc-400 mb-4">
+      <div className="bg-card border border-border rounded-xl p-12 text-center">
+        <p className="text-foreground-secondary mb-4">
           Failed to load dashboard data. Please try again.
         </p>
         <Button variant="outline" onClick={onRetry}>

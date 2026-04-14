@@ -11,10 +11,10 @@ export interface StatsGridProps {
 export function StatsGrid({ stats, className }: StatsGridProps) {
   const statCards = [
     {
-      title: 'Total Users',
+      title: 'Total Members',
       value: stats.total_users.count,
       suffix: '',
-      description: 'Registered users',
+      description: 'Active members',
       icon: Users,
       growth: stats.total_users.weekly_growth,
     },
@@ -22,7 +22,7 @@ export function StatsGrid({ stats, className }: StatsGridProps) {
       title: 'Active Connections',
       value: stats.active_conn.count,
       suffix: '',
-      description: 'Connected wearables',
+      description: 'Syncing devices',
       icon: Activity,
       growth: stats.active_conn.weekly_growth,
     },

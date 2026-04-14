@@ -5,26 +5,23 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 cursor-pointer',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 cursor-pointer',
   {
     variants: {
       variant: {
         default:
-          'bg-white text-black hover:bg-zinc-200 border border-transparent',
+          'bg-foreground text-background hover:bg-foreground/90',
         destructive:
-          'bg-red-500/10 text-red-400 border border-red-500/30 hover:border-red-500/50 hover:shadow-[0_0_15px_hsla(350,100%,55%,0.3)]',
+          'bg-destructive text-destructive-foreground hover:bg-destructive/90',
         'destructive-outline':
-          'border border-border/50 bg-background hover:bg-card hover:border-red-500/50 hover:text-red-400 hover:shadow-[0_0_10px_hsla(350,100%,55%,0.2)]',
+          'border border-destructive/30 text-destructive hover:bg-destructive-muted hover:border-destructive/50',
         outline:
-          'border border-border/50 bg-background hover:bg-card hover:border-primary/50 hover:shadow-[0_0_10px_hsla(185,100%,50%,0.2)]',
+          'border border-border bg-background hover:bg-secondary hover:border-border-hover',
         secondary:
-          'bg-zinc-800 text-zinc-100 hover:bg-zinc-700 border border-zinc-700/50',
+          'bg-secondary text-secondary-foreground hover:bg-secondary-hover',
         ghost:
-          'border border-transparent hover:border-border/50 hover:bg-card hover:text-foreground hover:shadow-[0_0_8px_hsla(185,100%,50%,0.15)]',
-        'ghost-faded':
-          'border border-transparent text-zinc-500 hover:border-border/50 hover:bg-card hover:text-zinc-300 hover:shadow-[0_0_8px_hsla(185,100%,50%,0.15)]',
+          'hover:bg-secondary hover:text-foreground',
         link: 'text-primary underline-offset-4 hover:underline',
-        neon: 'bg-primary text-primary-foreground border border-border/50 hover:bg-primary-hover hover:shadow-[0_0_20px_hsla(185,100%,50%,0.4)] transition-all duration-300 ease-out active:scale-[0.98]',
       },
       size: {
         default: 'h-10 px-4 py-2',

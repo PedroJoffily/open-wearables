@@ -10,6 +10,7 @@ from app.prompts import prompts_router
 from app.tools.activity import activity_router
 from app.tools.sleep import sleep_router
 from app.tools.users import users_router
+from app.tools.nutrition import nutrition_router
 from app.tools.workouts import workouts_router
 
 # Configure logging
@@ -35,6 +36,7 @@ mcp = FastMCP(
     - get_activity_summary: Get daily activity data (steps, calories, heart rate, intensity minutes)
     - get_sleep_summary: Get sleep data for a user over a specified time period
     - get_workout_events: Get workout/exercise data for a user over a specified time period
+    - get_calorie_budget: Get daily calorie budget combining wearable expenditure with logged meal intake
 
     Available prompts:
     - present_health_data: Guidelines for formatting health data for human readability
@@ -115,6 +117,7 @@ mcp.mount(users_router)
 mcp.mount(activity_router)
 mcp.mount(sleep_router)
 mcp.mount(workouts_router)
+mcp.mount(nutrition_router)
 
 # Mount prompts
 mcp.mount(prompts_router)

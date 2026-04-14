@@ -388,6 +388,58 @@ export interface ActivitySummary {
   heart_rate: HeartRateStats | null;
 }
 
+// ============================================================================
+// Nutrition Types
+// ============================================================================
+
+export interface MealRead {
+  id: string;
+  name: string;
+  calories_kcal: number;
+  protein_g: number | null;
+  carbs_g: number | null;
+  fat_g: number | null;
+  meal_type: string;
+  eaten_at: string;
+  created_at: string;
+}
+
+export interface MealCreate {
+  name: string;
+  calories_kcal: number;
+  protein_g?: number | null;
+  carbs_g?: number | null;
+  fat_g?: number | null;
+  meal_type: string;
+  eaten_at: string;
+}
+
+export interface NutritionExpenditure {
+  basal_kcal: number | null;
+  active_kcal: number | null;
+  total_kcal: number | null;
+}
+
+export interface NutritionIntake {
+  total_kcal: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  meals: MealRead[];
+}
+
+export interface NutritionBudget {
+  daily_target_kcal: number;
+  remaining_kcal: number;
+}
+
+export interface NutritionSummary {
+  date: string;
+  expenditure: NutritionExpenditure;
+  intake: NutritionIntake;
+  budget: NutritionBudget;
+}
+
 export interface ApiKey {
   id: string; // This is the actual API key value (sk-...)
   name: string;

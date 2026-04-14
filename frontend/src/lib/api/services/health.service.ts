@@ -18,6 +18,9 @@ import type {
   RecoverySummary,
   SleepSession,
   SleepSessionsParams,
+  MealRead,
+  MealCreate,
+  NutritionSummary,
 } from '../types';
 
 export interface WorkoutsParams {
@@ -256,6 +259,41 @@ export const healthService = {
     return apiClient.get<PaginatedResponse<SleepSession>>(
       API_ENDPOINTS.userSleepSessions(userId),
       { params }
+    );
+  },
+
+  // Nutrition endpoints
+
+  async getNutritionSummary(
+    userId: string,
+    params: { date: string }
+  ): Promise<NutritionSummary> {
+    return apiClient.get<NutritionSummary>(
+      API_ENDPOINTS.userNutritionSummary(userId),
+      { params }
+    );
+  },
+
+  async getMeals(
+    userId: string,
+    params: { date: string }
+  ): Promise<MealRead[]> {
+    return apiClient.get<MealRead[]>(
+      API_ENDPOINTS.userNutritionMeals(userId),
+      { params }
+    );
+  },
+
+  async createMeal(userId: string, data: MealCreate): Promise<MealRead> {
+    return apiClient.post<MealRead>(
+      API_ENDPOINTS.userNutritionMeals(userId),
+      data
+    );
+  },
+
+  async deleteMeal(userId: string, mealId: string): Promise<void> {
+    return apiClient.delete(
+      API_ENDPOINTS.userNutritionMealDetail(userId, mealId)
     );
   },
 };

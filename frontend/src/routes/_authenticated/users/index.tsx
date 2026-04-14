@@ -54,7 +54,7 @@ function UsersPage() {
 
     if (formData.external_user_id && formData.external_user_id.length > 255) {
       errors.external_user_id =
-        'External User ID must be 255 characters or less';
+        'External ID must be 255 characters or less';
     }
 
     if (formData.first_name && formData.first_name.length > 100) {
@@ -112,17 +112,17 @@ function UsersPage() {
     return (
       <div className="p-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-medium text-white">Users</h1>
-          <p className="text-sm text-zinc-500 mt-1">
-            Manage your platform users
+          <h1 className="text-2xl font-medium text-foreground">Members</h1>
+          <p className="text-sm text-foreground-muted mt-1">
+            Manage your studio members
           </p>
         </div>
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+        <div className="bg-card border border-border rounded-xl p-6">
           <div className="animate-pulse space-y-4">
-            <div className="h-10 bg-zinc-800 rounded-md w-full" />
+            <div className="h-10 bg-muted rounded-md w-full" />
             <div className="space-y-3">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-16 bg-zinc-800/50 rounded-md" />
+                <div key={i} className="h-16 bg-muted/50 rounded-md" />
               ))}
             </div>
           </div>
@@ -134,9 +134,9 @@ function UsersPage() {
   if (error) {
     return (
       <div className="p-8">
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-8 text-center">
-          <p className="text-zinc-400 mb-4">
-            Failed to load users. Please try again.
+        <div className="bg-card border border-border rounded-xl p-8 text-center">
+          <p className="text-foreground-secondary mb-4">
+            Failed to load members. Please try again.
           </p>
           <Button onClick={() => refetch()}>Retry</Button>
         </div>
@@ -152,14 +152,14 @@ function UsersPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-medium text-white">Users</h1>
-          <p className="text-sm text-zinc-500 mt-1">
-            Manage your platform users and their wearable connections
+          <h1 className="text-2xl font-medium text-foreground">Members</h1>
+          <p className="text-sm text-foreground-muted mt-1">
+            Manage your studio members and their wearable connections
           </p>
         </div>
         <Button onClick={() => setIsCreateDialogOpen(true)}>
           <Plus className="h-4 w-4" />
-          Add User
+          Add Member
         </Button>
       </div>
 
@@ -176,16 +176,16 @@ function UsersPage() {
           onQueryChange={handleQueryChange}
         />
       ) : (
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-12 text-center">
-          <UsersIcon className="h-12 w-12 text-zinc-700 mx-auto mb-4" />
-          <p className="text-zinc-400 mb-2">No users found</p>
+        <div className="bg-card border border-border rounded-xl p-12 text-center">
+          <UsersIcon className="h-12 w-12 text-foreground-secondary mx-auto mb-4" />
+          <p className="text-foreground-secondary mb-2">No members yet</p>
           <Button
             variant="outline"
             onClick={() => setIsCreateDialogOpen(true)}
             className="mt-4"
           >
             <Plus className="h-4 w-4" />
-            Create First User
+            Add First Member
           </Button>
         </div>
       )}
@@ -202,16 +202,16 @@ function UsersPage() {
       >
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Create New User</DialogTitle>
+            <DialogTitle>Add New Member</DialogTitle>
             <DialogDescription>
-              Create a new user to connect wearable devices and collect health
-              data.
+              Add a new member to connect wearable devices and track their
+              health data.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="external_user_id" className="text-zinc-300">
-                External User ID
+              <Label htmlFor="external_user_id" className="text-foreground">
+                External ID
               </Label>
               <Input
                 id="external_user_id"
@@ -225,20 +225,20 @@ function UsersPage() {
                   })
                 }
                 maxLength={255}
-                className="bg-zinc-800 border-zinc-700"
+                className="bg-muted border-border-hover"
               />
               {formErrors.external_user_id && (
-                <p className="text-xs text-red-500">
+                <p className="text-xs text-destructive">
                   {formErrors.external_user_id}
                 </p>
               )}
-              <p className="text-[10px] text-zinc-600">
+              <p className="text-[10px] text-foreground-muted">
                 Your unique identifier for this user (max 255 characters)
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="first_name" className="text-zinc-300">
+                <Label htmlFor="first_name" className="text-foreground">
                   First Name
                 </Label>
                 <Input
@@ -250,16 +250,16 @@ function UsersPage() {
                     setFormData({ ...formData, first_name: e.target.value })
                   }
                   maxLength={100}
-                  className="bg-zinc-800 border-zinc-700"
+                  className="bg-muted border-border-hover"
                 />
                 {formErrors.first_name && (
-                  <p className="text-xs text-red-500">
+                  <p className="text-xs text-destructive">
                     {formErrors.first_name}
                   </p>
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="last_name" className="text-zinc-300">
+                <Label htmlFor="last_name" className="text-foreground">
                   Last Name
                 </Label>
                 <Input
@@ -271,15 +271,15 @@ function UsersPage() {
                     setFormData({ ...formData, last_name: e.target.value })
                   }
                   maxLength={100}
-                  className="bg-zinc-800 border-zinc-700"
+                  className="bg-muted border-border-hover"
                 />
                 {formErrors.last_name && (
-                  <p className="text-xs text-red-500">{formErrors.last_name}</p>
+                  <p className="text-xs text-destructive">{formErrors.last_name}</p>
                 )}
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-zinc-300">
+              <Label htmlFor="email" className="text-foreground">
                 Email
               </Label>
               <Input
@@ -290,10 +290,10 @@ function UsersPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
                 }
-                className="bg-zinc-800 border-zinc-700"
+                className="bg-muted border-border-hover"
               />
               {formErrors.email && (
-                <p className="text-xs text-red-500">{formErrors.email}</p>
+                <p className="text-xs text-destructive">{formErrors.email}</p>
               )}
             </div>
           </div>
@@ -302,7 +302,7 @@ function UsersPage() {
               Cancel
             </Button>
             <Button onClick={handleCreateUser} disabled={createUser.isPending}>
-              {createUser.isPending ? 'Creating...' : 'Create User'}
+              {createUser.isPending ? 'Creating...' : 'Add Member'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -314,21 +314,21 @@ function UsersPage() {
       >
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Delete User?</DialogTitle>
+            <DialogTitle>Remove Member?</DialogTitle>
             <DialogDescription>
-              This action cannot be undone. This will permanently delete the
-              user and all associated data including:
+              This action cannot be undone. This will permanently remove the
+              member and all associated data including:
             </DialogDescription>
           </DialogHeader>
           <div>
-            <ul className="list-disc list-inside text-sm text-zinc-500 space-y-1">
+            <ul className="list-disc list-inside text-sm text-foreground-muted space-y-1">
               <li>All wearable device connections</li>
               <li>All health data (sleep, activity)</li>
               <li>All automation triggers for this user</li>
             </ul>
-            <div className="mt-4 p-3 bg-zinc-800 rounded-md">
-              <p className="text-xs text-zinc-500">User ID:</p>
-              <code className="font-mono text-sm text-zinc-300">
+            <div className="mt-4 p-3 bg-muted rounded-md">
+              <p className="text-xs text-foreground-muted">Member ID:</p>
+              <code className="font-mono text-sm text-foreground">
                 {deleteUserId}
               </code>
             </div>
@@ -342,7 +342,7 @@ function UsersPage() {
               onClick={handleDeleteUser}
               disabled={deleteUser.isPending}
             >
-              {deleteUser.isPending ? 'Deleting...' : 'Delete User'}
+              {deleteUser.isPending ? 'Removing...' : 'Remove Member'}
             </Button>
           </DialogFooter>
         </DialogContent>

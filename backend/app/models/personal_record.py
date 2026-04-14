@@ -1,10 +1,9 @@
 from uuid import UUID
-from datetime import date
 
 from sqlalchemy.orm import Mapped, relationship
 
 from app.database import BaseDbModel
-from app.mappings import PrimaryKey, Unique, FKUser, str_32
+from app.mappings import PrimaryKey, UniqueFkUser, date_col, str_32, numeric_10_2
 
 
 class PersonalRecord(BaseDbModel):
@@ -13,10 +12,11 @@ class PersonalRecord(BaseDbModel):
     __tablename__ = "personal_record"
 
     id: Mapped[PrimaryKey[UUID]]
-    user_id: Mapped[Unique[FKUser]]
+    user_id: Mapped[UniqueFkUser]
 
-    birth_date: Mapped[date | None]
+    birth_date: Mapped[date_col | None]
     sex: Mapped[bool | None]
     gender: Mapped[str_32 | None]
+    daily_calorie_target_kcal: Mapped[int | None]
 
     user: Mapped["User"] = relationship(back_populates="personal_record")

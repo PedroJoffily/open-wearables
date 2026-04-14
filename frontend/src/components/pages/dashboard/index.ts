@@ -22,3 +22,11 @@ export {
   DataSummaryCard,
   type DataSummaryCardProps,
 } from './data-summary-card';
+export {
+  AIRecommendationsPanel,
+  type AIRecommendationsPanelProps,
+} from './ai-recommendations-panel';
+export {
+  CoachTodoPanel,
+  type CoachTodoPanelProps,
+} from './coach-todo-panel';

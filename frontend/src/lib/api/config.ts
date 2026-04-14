@@ -91,4 +91,12 @@ export const API_ENDPOINTS = {
   seedGenerate: '/api/v1/settings/seed',
   seedPresets: '/api/v1/settings/seed/presets',
   seedSleepProfiles: '/api/v1/settings/seed/sleep-profiles',
+
+  // Nutrition endpoints
+  userNutritionSummary: (userId: string) =>
+    `/api/v1/users/${userId}/summaries/nutrition`,
+  userNutritionMeals: (userId: string) =>
+    `/api/v1/users/${userId}/nutrition/meals`,
+  userNutritionMealDetail: (userId: string, mealId: string) =>
+    `/api/v1/users/${userId}/nutrition/meals/${mealId}`,
 } as const;

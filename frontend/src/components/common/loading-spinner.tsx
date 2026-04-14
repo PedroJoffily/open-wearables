@@ -19,7 +19,7 @@ export function LoadingSpinner({
   return (
     <Loader2
       className={cn(
-        'animate-spin text-primary drop-shadow-[0_0_8px_hsla(185,100%,60%,0.6)]',
+        'animate-spin text-primary',
         sizeClasses[size],
         className
       )}
@@ -42,7 +42,7 @@ export function LoadingState({
     >
       <div className="relative">
         <LoadingSpinner size="lg" />
-        <div className="absolute inset-0 animate-pulse-glow rounded-full bg-primary/20 blur-xl" />
+        <div className="absolute inset-0 rounded-full bg-primary/10 blur-xl" />
       </div>
       <p className="mt-4 text-sm text-muted-foreground">{message}</p>
     </div>

@@ -268,14 +268,19 @@ class StravaWorkouts(BaseWorkoutsTemplate):
         else:
             end_dt = datetime.now(timezone.utc)
 
-        # Fetch all activities
+        # Fetch all activities (list endpoint — summary data only)
         raw_activities = self.get_workouts(db, user_id, start_dt, end_dt)
 
-        # Parse and save
+        # For each activity, fetch detail endpoint to get accurate calorie data.
+        # The list endpoint often returns calories=None and only kilojoules,
+        # while the detail endpoint returns the full calories value from the device.
         parsed_activities = []
         for raw in raw_activities:
             try:
                 activity = StravaActivityJSON(**raw) if isinstance(raw, dict) else raw
+                detail_raw = self.get_workout_detail_from_api(db, user_id, str(activity.id))
+                if isinstance(detail_raw, dict):
+                    activity = StravaActivityJSON(**detail_raw)
                 parsed_activities.append(activity)
             except Exception as e:
                 log_structured(
