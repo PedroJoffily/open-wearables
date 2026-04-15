@@ -52,10 +52,10 @@ class WorkflowEngine:
 
         tools = tool_manager.get_tools_for_mode(mode)
         agent = HealthReasoningAgent(user_id=user_id, mode=mode, tools=tools, language=language)
-        router = HealthRouter()
         guardrails = HealthGuardrailsAgent(language=lang_name)
 
         seed_history = _build_history(history)
+        router = HealthRouter(history=seed_history)
 
         deps = {
             "agent": agent,
