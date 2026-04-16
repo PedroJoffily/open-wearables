@@ -112,9 +112,9 @@ function UsersPage() {
     return (
       <div className="p-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-medium text-foreground">Members</h1>
+          <h1 className="text-2xl font-medium text-foreground">Clients</h1>
           <p className="text-sm text-foreground-muted mt-1">
-            Manage your studio members
+            Manage your studio clients
           </p>
         </div>
         <div className="bg-card border border-border rounded-xl p-6">
@@ -136,7 +136,7 @@ function UsersPage() {
       <div className="p-8">
         <div className="bg-card border border-border rounded-xl p-8 text-center">
           <p className="text-foreground-secondary mb-4">
-            Failed to load members. Please try again.
+            Failed to load clients. Please try again.
           </p>
           <Button onClick={() => refetch()}>Retry</Button>
         </div>
@@ -152,9 +152,9 @@ function UsersPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-medium text-foreground">Members</h1>
+          <h1 className="text-2xl font-medium text-foreground">Clients</h1>
           <p className="text-sm text-foreground-muted mt-1">
-            Manage your studio members and their wearable connections
+            Manage your studio clients and their wearable connections
           </p>
         </div>
         <Button onClick={() => setIsCreateDialogOpen(true)}>
@@ -178,7 +178,7 @@ function UsersPage() {
       ) : (
         <div className="bg-card border border-border rounded-xl p-12 text-center">
           <UsersIcon className="h-12 w-12 text-foreground-secondary mx-auto mb-4" />
-          <p className="text-foreground-secondary mb-2">No members yet</p>
+          <p className="text-foreground-secondary mb-2">No clients yet</p>
           <Button
             variant="outline"
             onClick={() => setIsCreateDialogOpen(true)}

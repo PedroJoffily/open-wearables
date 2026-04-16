@@ -25,9 +25,11 @@ from app.schemas.enums import ProviderName, SeriesType, WorkoutType
 from app.schemas.model_crud.activities import (
     EventRecordCreate,
     EventRecordDetailCreate,
+    HealthScoreCreate,
     PersonalRecordCreate,
     TimeSeriesSampleCreate,
 )
+from app.schemas.model_crud.activities.health_score import ScoreComponent
 from app.schemas.model_crud.activities.sleep import SleepStage
 from app.schemas.model_crud.user_management import (
     UserConnectionCreate,
@@ -35,12 +37,14 @@ from app.schemas.model_crud.user_management import (
     UserCreate,
 )
 from app.schemas.utils.seed_data import (
+    CLINIC_DEMO_PERSONAS,
     SLEEP_STAGE_PROFILES,
     SeedDataRequest,
     SleepConfig,
     WorkoutConfig,
 )
 from app.services.event_record_service import event_record_service
+from app.services.health_score_service import health_score_service
 from app.services.timeseries_service import timeseries_service
 from app.services.user_service import user_service
 from app.utils.structured_logging import log_structured
@@ -83,6 +87,12 @@ PROVIDER_CONFIGS: dict[ProviderName, dict] = {
         "manufacturer": "WHOOP Inc.",
         "devices": ["WHOOP 5.0", "WHOOP 4.0", "WHOOP 3.0"],
         "os_versions": ["5.0", "4.0", "3.0"],
+    },
+    ProviderName.OURA: {
+        "source_name": "Oura",
+        "manufacturer": "Oura Health",
+        "devices": ["Oura Ring Gen 3", "Oura Ring Gen 4"],
+        "os_versions": ["3.0", "4.0"],
     },
 }
 
@@ -481,6 +491,75 @@ def _generate_user_connections(
     return connections, provider_sync_times
 
 
+def _generate_health_scores(
+    user_id: UUID,
+    fake: Faker,
+    provider: ProviderName,
+    categories: list,
+    score_range: tuple[int, int],
+    days: int,
+    now: datetime,
+) -> list[HealthScoreCreate]:
+    """Generate daily health scores for the given categories."""
+    from app.schemas.enums import HealthScoreCategory
+
+    scores: list[HealthScoreCreate] = []
+    lo, hi = score_range
+
+    # Component definitions per category
+    component_defs = {
+        HealthScoreCategory.SLEEP: ["duration", "deep_sleep", "rem_sleep", "efficiency", "consistency"],
+        HealthScoreCategory.RECOVERY: ["hrv", "resting_hr", "sleep_quality", "training_load"],
+        HealthScoreCategory.ACTIVITY: ["active_minutes", "steps", "intensity", "consistency"],
+        HealthScoreCategory.READINESS: ["sleep", "recovery", "activity_balance", "hrv_trend"],
+    }
+
+    for day_offset in range(days):
+        day = now - timedelta(days=day_offset)
+        recorded_at = day.replace(hour=7, minute=0, second=0)
+
+        for cat in categories:
+            # Trend: scores slightly better for recent days (recency bias)
+            recency_bonus = max(0, (days - day_offset) / days * 5)
+            day_lo = max(0, lo + int(recency_bonus) - fake.random_int(min=0, max=8))
+            day_hi = min(100, hi + int(recency_bonus))
+            value = fake.random_int(min=max(0, day_lo), max=min(100, day_hi))
+
+            # Generate components
+            components = None
+            cat_components = component_defs.get(cat)
+            if cat_components:
+                components = {}
+                for comp_name in cat_components:
+                    comp_value = max(0, min(100, value + fake.random_int(min=-15, max=15)))
+                    components[comp_name] = ScoreComponent(value=comp_value)
+
+            scores.append(
+                HealthScoreCreate(
+                    id=uuid4(),
+                    user_id=user_id,
+                    provider=provider,
+                    category=cat,
+                    value=value,
+                    qualifier=_score_qualifier(value),
+                    recorded_at=recorded_at,
+                    components=components,
+                )
+            )
+
+    return scores
+
+
+def _score_qualifier(value: int) -> str:
+    if value >= 85:
+        return "excellent"
+    if value >= 70:
+        return "good"
+    if value >= 50:
+        return "fair"
+    return "poor"
+
+
 # ---------------------------------------------------------------------------
 # Service
 # ---------------------------------------------------------------------------
@@ -592,6 +671,138 @@ class SeedDataService:
                 summary["workouts"],
                 summary["sleeps"],
                 summary["time_series_samples"],
+            )
+
+        summary["seed_used"] = seed
+        return summary
+
+    def generate_clinic_demo(self, db: Session, request: SeedDataRequest) -> dict:
+        """Generate the clinic_demo preset: 18 named personas with health scores."""
+        seed = request.random_seed if request.random_seed is not None else random.randint(0, 2**31 - 1)
+        random.seed(seed)
+        fake = Faker()
+        Faker.seed(seed)
+
+        now = datetime.now(timezone.utc)
+
+        personal_record_repo = CrudRepository(PersonalRecord)
+        event_detail_repo = EventRecordDetailRepository(EventRecordDetail)
+        connection_repo = CrudRepository(UserConnection)
+
+        summary = {
+            "users": 0,
+            "connections": 0,
+            "workouts": 0,
+            "sleeps": 0,
+            "time_series_samples": 0,
+            "health_scores": 0,
+        }
+
+        for persona in CLINIC_DEMO_PERSONAS:
+            user = user_service.create(
+                db,
+                UserCreate(
+                    first_name=persona.first_name,
+                    last_name=persona.last_name,
+                    email=f"{persona.first_name.lower()}.{persona.last_name.lower()}@demo.clinic",
+                ),
+            )
+            summary["users"] += 1
+
+            # Personal record
+            personal_record_repo.create(db, _generate_personal_record(user.id, fake))
+
+            # Provider connections using persona-specified providers
+            user_connections, provider_sync_times = _generate_user_connections(
+                user.id,
+                fake,
+                now,
+                num_connections=len(persona.providers),
+                providers=persona.providers,
+            )
+            for conn_data in user_connections:
+                created = connection_repo.create(db, conn_data)
+                if created:
+                    prov = ProviderName(conn_data.provider)
+                    connection_repo.update(db, created, UserConnectionUpdate(last_synced_at=provider_sync_times[prov]))
+                    summary["connections"] += 1
+
+            # Date range: relative to now, based on persona's days_of_data
+            date_from = (now - timedelta(days=persona.days_of_data)).date()
+            date_to = now.date()
+
+            # Workouts
+            if persona.generate_workouts and persona.workout_count > 0:
+                wk_config = WorkoutConfig(
+                    count=persona.workout_count,
+                    workout_types=persona.workout_types,
+                    duration_min_minutes=20,
+                    duration_max_minutes=120,
+                    time_series_chance_pct=30,
+                    date_from=date_from,
+                    date_to=date_to,
+                )
+                for _ in range(wk_config.count):
+                    record, detail = _generate_workout(user.id, fake, provider_sync_times, wk_config)
+                    event_record_service.create(db, record)
+                    event_record_service.create_detail(db, detail)
+                    summary["workouts"] += 1
+
+                    if persona.generate_time_series and fake.boolean(chance_of_getting_true=wk_config.time_series_chance_pct):
+                        samples = _generate_time_series_samples(
+                            record.start_datetime,
+                            record.end_datetime,
+                            fake,
+                            user_id=user.id,
+                            source=record.source or "unknown",
+                            device_model=record.device_model,
+                            provider=record.provider,
+                            software_version=record.software_version,
+                        )
+                        if samples:
+                            timeseries_service.bulk_create_samples(db, samples)
+                            summary["time_series_samples"] += len(samples)
+
+            # Sleep records
+            if persona.generate_sleep and persona.sleep_count > 0:
+                sl_config = SleepConfig(
+                    count=persona.sleep_count,
+                    duration_min_minutes=persona.sleep_duration_min,
+                    duration_max_minutes=persona.sleep_duration_max,
+                    stage_profile=persona.sleep_profile,
+                    date_from=date_from,
+                    date_to=date_to,
+                )
+                for _ in range(sl_config.count):
+                    record, detail = _generate_sleep(user.id, fake, provider_sync_times, sl_config)
+                    event_record_service.create(db, record)
+                    event_detail_repo.create(db, detail, detail_type="sleep")
+                    summary["sleeps"] += 1
+
+            # Health scores
+            hs_config = persona.health_score_config
+            primary_provider = persona.providers[0]
+            scores = _generate_health_scores(
+                user.id,
+                fake,
+                primary_provider,
+                hs_config.categories,
+                hs_config.score_range,
+                min(hs_config.days, persona.days_of_data),
+                now,
+            )
+            if scores:
+                health_score_service.bulk_create(db, scores)
+                summary["health_scores"] += len(scores)
+
+            db.commit()
+            logger.info(
+                "Clinic demo persona %s %s created (workouts=%d, sleeps=%d, scores=%d)",
+                persona.first_name,
+                persona.last_name,
+                persona.workout_count if persona.generate_workouts else 0,
+                persona.sleep_count if persona.generate_sleep else 0,
+                len(scores),
             )
 
         summary["seed_used"] = seed

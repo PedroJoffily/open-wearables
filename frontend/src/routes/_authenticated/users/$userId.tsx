@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { useState, useRef, useMemo, type ReactNode } from 'react';
+import { useState, useRef, useMemo, useEffect, type ReactNode } from 'react';
+import { z } from 'zod';
 import {
   ArrowLeft,
   Link as LinkIcon,
@@ -7,12 +8,11 @@ import {
   Check,
   Upload,
   Loader2,
-  User,
+  LayoutDashboard,
   Dumbbell,
-  Activity,
   Moon,
   Scale,
-  UtensilsCrossed,
+  FlaskConical,
   Key,
   Copy,
   ClipboardList,
@@ -22,17 +22,17 @@ import {
   useUser,
   useDeleteUser,
   useAppleXmlUpload,
-  useGenerateUserToken,
+  useGenerateInvitationCode,
 } from '@/hooks/api/use-users';
 import { ROUTES } from '@/lib/constants/routes';
 import { copyToClipboard } from '@/lib/utils/clipboard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ProfileSection } from '@/components/user/profile-section';
 import { SleepSection } from '@/components/user/sleep-section';
 import { ActivitySection } from '@/components/user/activity-section';
 import { BodySection } from '@/components/user/body-section';
-import { NutritionSection } from '@/components/user/nutrition-section';
+import { LabResultsSection } from '@/components/user/lab-results-section';
 import { WorkoutSection } from '@/components/user/workout-section';
+import { HealthScoresDashboard } from '@/components/user/health-scores-dashboard';
 import { AIHealthSummary } from '@/components/user/ai-health-summary';
 import { CoachingNotes } from '@/components/user/coaching-notes';
 import type { DateRangeValue } from '@/components/ui/date-range-selector';
@@ -58,8 +58,13 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 
+const userSearchSchema = z.object({
+  tab: z.string().optional(),
+});
+
 export const Route = createFileRoute('/_authenticated/users/$userId')({
   component: UserDetailPage,
+  validateSearch: userSearchSchema,
 });
 
 interface TabConfig {
@@ -71,11 +76,19 @@ interface TabConfig {
 
 function UserDetailPage() {
   const { userId } = Route.useParams();
+  const search = Route.useSearch();
   const navigate = useNavigate();
   const { data: user, isLoading: userLoading } = useUser(userId);
 
-  // Tab state
-  const [activeTab, setActiveTab] = useState('profile');
+  // Tab state — initialize from search param
+  const [activeTab, setActiveTab] = useState(search.tab || 'overview');
+
+  // Sync tab from URL search param changes
+  useEffect(() => {
+    if (search.tab && search.tab !== activeTab) {
+      setActiveTab(search.tab);
+    }
+  }, [search.tab]);
 
   // Date range states for different sections
   const [workoutDateRange, setWorkoutDateRange] = useState<DateRangeValue>(30);
@@ -89,7 +102,7 @@ function UserDetailPage() {
     mutate: generateToken,
     data: tokenData,
     isPending: isGeneratingToken,
-  } = useGenerateUserToken();
+  } = useGenerateInvitationCode();
   const [copied, setCopied] = useState(false);
   const [tokenCopied, setTokenCopied] = useState(false);
   const [isTokenDialogOpen, setIsTokenDialogOpen] = useState(false);
@@ -101,33 +114,28 @@ function UserDetailPage() {
   const tabs: TabConfig[] = useMemo(
     () => [
       {
-        id: 'profile',
-        label: 'Profile',
-        icon: User,
-        content: <ProfileSection userId={userId} />,
-      },
-      {
-        id: 'workouts',
-        label: 'Workouts',
-        icon: Dumbbell,
-        content: (
-          <WorkoutSection
-            userId={userId}
-            dateRange={workoutDateRange}
-            onDateRangeChange={setWorkoutDateRange}
-          />
-        ),
+        id: 'overview',
+        label: 'Overview',
+        icon: LayoutDashboard,
+        content: <HealthScoresDashboard userId={userId} />,
       },
       {
         id: 'activity',
-        label: 'Activity',
-        icon: Activity,
+        label: 'Activity & Workouts',
+        icon: Dumbbell,
         content: (
-          <ActivitySection
-            userId={userId}
-            dateRange={activityDateRange}
-            onDateRangeChange={setActivityDateRange}
-          />
+          <div className="space-y-8">
+            <ActivitySection
+              userId={userId}
+              dateRange={activityDateRange}
+              onDateRangeChange={setActivityDateRange}
+            />
+            <WorkoutSection
+              userId={userId}
+              dateRange={workoutDateRange}
+              onDateRangeChange={setWorkoutDateRange}
+            />
+          </div>
         ),
       },
       {
@@ -144,19 +152,19 @@ function UserDetailPage() {
       },
       {
         id: 'body',
-        label: 'Body',
+        label: 'Body & Vitals',
         icon: Scale,
         content: <BodySection userId={userId} />,
       },
       {
-        id: 'nutrition',
-        label: 'Nutrition',
-        icon: UtensilsCrossed,
-        content: <NutritionSection userId={userId} />,
+        id: 'lab-results',
+        label: 'Lab Results',
+        icon: FlaskConical,
+        content: <LabResultsSection userId={userId} />,
       },
       {
         id: 'notes',
-        label: 'Notes',
+        label: 'Notes & Messages',
         icon: ClipboardList,
         content: <CoachingNotes userId={userId} />,
       },
@@ -210,11 +218,11 @@ function UserDetailPage() {
     return (
       <div className="p-8">
         <div className="bg-card border border-border rounded-xl p-12 text-center">
-          <p className="text-foreground-secondary">Member not found</p>
+          <p className="text-foreground-secondary">Client not found</p>
           <Button variant="outline" className="mt-4" asChild>
             <Link to={ROUTES.users}>
               <ArrowLeft className="h-4 w-4" />
-              Back to Members
+              Back to Clients
             </Link>
           </Button>
         </div>
@@ -243,7 +251,7 @@ function UserDetailPage() {
               <h1 className="text-2xl font-medium text-foreground">
                 {user?.first_name || user?.last_name
                   ? `${user?.first_name || ''} ${user?.last_name || ''}`.trim()
-                  : 'Unnamed Member'}
+                  : 'Unnamed Client'}
               </h1>
               <p className="text-sm text-foreground-muted">
                 {user?.email || 'No email'}
@@ -310,14 +318,14 @@ function UserDetailPage() {
             <AlertDialogTrigger asChild>
               <Button variant="destructive" disabled={isDeleting}>
                 <Trash2 className="h-4 w-4" />
-                {isDeleting ? 'Removing...' : 'Remove Member'}
+                {isDeleting ? 'Removing...' : 'Remove Client'}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Remove Member</AlertDialogTitle>
+                <AlertDialogTitle>Remove Client</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Are you sure you want to remove this member? This action cannot
+                  Are you sure you want to remove this client? This action cannot
                   be undone and will permanently delete all associated data.
                 </AlertDialogDescription>
               </AlertDialogHeader>
@@ -339,7 +347,7 @@ function UserDetailPage() {
           memberName={
             user.first_name || user.last_name
               ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
-              : 'this member'
+              : 'this client'
           }
         />
       )}
@@ -365,7 +373,7 @@ function UserDetailPage() {
       <Dialog open={isTokenDialogOpen} onOpenChange={setIsTokenDialogOpen}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Member Token Generated</DialogTitle>
+            <DialogTitle>Client Token Generated</DialogTitle>
             <DialogDescription>
               This token has infinite expiration time and can be used to access
               SDK endpoints for this user. Store it securely.

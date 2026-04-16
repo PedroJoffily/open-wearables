@@ -27,6 +27,22 @@ export {
   type AIRecommendationsPanelProps,
 } from './ai-recommendations-panel';
 export {
-  CoachTodoPanel,
-  type CoachTodoPanelProps,
-} from './coach-todo-panel';
+  EnhancedStatsGrid,
+  type EnhancedStatsGridProps,
+} from './enhanced-stats-grid';
+export {
+  ClientsAtRisk,
+  type ClientsAtRiskProps,
+} from './clients-at-risk';
+export {
+  ActivityFeedPanel,
+  type ActivityFeedPanelProps,
+} from './activity-feed';
+export {
+  RetentionEngagement,
+  type RetentionEngagementProps,
+} from './retention-engagement';
+export {
+  RecommendedCheckIns,
+  type RecommendedCheckInsProps,
+} from './recommended-check-ins';

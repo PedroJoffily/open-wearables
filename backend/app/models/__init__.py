@@ -10,6 +10,7 @@ from .device_type_priority import DeviceTypePriority
 from .event_record import EventRecord
 from .event_record_detail import EventRecordDetail
 from .invitation import Invitation
+from .lab_result import LabResult
 from .meal import Meal
 from .personal_record import PersonalRecord
 from .provider_priority import ProviderPriority
@@ -31,6 +32,7 @@ __all__ = [
     "DataPointSeriesArchive",
     "DeviceTypePriority",
     "Invitation",
+    "LabResult",
     "Meal",
     "ProviderPriority",
     "ProviderSetting",

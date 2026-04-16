@@ -169,5 +169,9 @@ CLAUDE.local.md
 .claude/
 *.local.mdc
 
+# Local session/tooling files with secrets
+ngrok.yml
+SESSION-HANDOFF.md
+
 # Exception: AI tool configs that should be tracked
 !.gemini/settings.json

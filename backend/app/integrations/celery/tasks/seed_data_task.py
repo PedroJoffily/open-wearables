@@ -21,7 +21,10 @@ def generate_seed_data(request_data: dict) -> dict:
     config = SeedDataRequest.model_validate(request_data)
     with SessionLocal() as db:
         try:
-            summary = seed_data_service.generate(db, config)
+            if config.profile.preset == "clinic_demo":
+                summary = seed_data_service.generate_clinic_demo(db, config)
+            else:
+                summary = seed_data_service.generate(db, config)
             logger.info("Seed data generation completed: %s", summary)
             return summary
         except Exception:

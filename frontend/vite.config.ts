@@ -13,8 +13,16 @@ const config = defineConfig({
   server: {
     host: '0.0.0.0',
     port: 3000,
+    allowedHosts: true,
     watch: {
       usePolling: true,
+    },
+    proxy: {
+      '/ai-api': {
+        target: 'http://ai-backend:8080',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/ai-api/, ''),
+      },
     },
   },
   plugins: [

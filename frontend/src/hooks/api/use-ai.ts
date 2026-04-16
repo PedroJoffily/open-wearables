@@ -4,15 +4,33 @@ import type { RecommendationCategory } from '@/lib/api/ai-client';
 
 const AI_QUERY_KEYS = {
   recommendations: ['ai', 'recommendations'] as const,
+  checkIns: ['ai', 'check-ins'] as const,
   summary: (userId: string) => ['ai', 'summary', userId] as const,
   notes: (userId: string) => ['ai', 'notes', userId] as const,
 };
 
 // Recommendations
-export function useAIRecommendations(resolved = false, category?: RecommendationCategory) {
+export function useAIRecommendations(
+  resolved = false,
+  category?: RecommendationCategory | RecommendationCategory[],
+  limit = 20,
+  offset = 0,
+  sortBy: 'created_at' | 'severity' | 'member_name' = 'created_at',
+  sortOrder: 'asc' | 'desc' = 'desc',
+) {
   return useQuery({
-    queryKey: [...AI_QUERY_KEYS.recommendations, resolved, category],
-    queryFn: () => aiApi.getRecommendations(resolved, category),
+    queryKey: [...AI_QUERY_KEYS.recommendations, resolved, category, limit, offset, sortBy, sortOrder],
+    queryFn: () => aiApi.getRecommendations(resolved, category, limit, offset, sortBy, sortOrder),
+    retry: 1,
+    staleTime: 60_000,
+  });
+}
+
+// Check-ins
+export function useCheckIns() {
+  return useQuery({
+    queryKey: AI_QUERY_KEYS.checkIns,
+    queryFn: () => aiApi.getCheckIns(),
     retry: 1,
     staleTime: 60_000,
   });
@@ -24,6 +42,7 @@ export function useResolveRecommendation() {
     mutationFn: (recId: string) => aiApi.resolveRecommendation(recId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AI_QUERY_KEYS.recommendations });
+      queryClient.invalidateQueries({ queryKey: AI_QUERY_KEYS.checkIns });
     },
   });
 }

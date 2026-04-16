@@ -8,7 +8,9 @@ export const ROUTES = {
 
   // Authenticated routes
   dashboard: '/dashboard',
+  recommendations: '/recommendations',
   users: '/users',
+  analytics: '/analytics',
   settings: '/settings',
 
   // Widget routes

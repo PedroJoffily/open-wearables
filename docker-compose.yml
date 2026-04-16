@@ -52,6 +52,7 @@ services:
       - REDIS_HOST=redis
     volumes:
       - svix_secrets:/run/svix-secrets:ro
+      - uploads_data:/data/uploads
     ports:
       - "8000:8000"
     depends_on:
@@ -94,6 +95,7 @@ services:
       - REDIS_HOST=redis
     volumes:
       - svix_secrets:/run/svix-secrets:ro
+      - uploads_data:/data/uploads
     depends_on:
       - redis
       - db
@@ -240,3 +242,4 @@ volumes:
   redis_data:
   svix_secrets:
   ai_backend_data:
+  uploads_data:

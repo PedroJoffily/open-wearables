@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import init_db
-from app.api.routes import recommendations, summary, notes
+from app.api.routes import recommendations, summary, notes, health_scores, portfolio, activity_feed
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -72,6 +72,9 @@ app.add_middleware(
 app.include_router(recommendations.router)
 app.include_router(summary.router)
 app.include_router(notes.router)
+app.include_router(health_scores.router)
+app.include_router(portfolio.router)
+app.include_router(activity_feed.router)
 
 
 @app.get("/health")

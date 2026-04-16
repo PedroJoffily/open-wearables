@@ -1,8 +1,9 @@
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated, TypeVar
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Numeric, String
+from sqlalchemy import Date, DateTime, ForeignKey, Numeric, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import mapped_column
 
@@ -35,10 +36,13 @@ numeric_5_2 = Annotated[Decimal, mapped_column(Numeric(5, 2))]
 numeric_10_3 = Annotated[Decimal, mapped_column(Numeric(10, 3))]
 numeric_10_2 = Annotated[Decimal, mapped_column(Numeric(10, 2))]
 numeric_15_5 = Annotated[Decimal, mapped_column(Numeric(15, 5))]
+datetime_tz = Annotated[datetime, mapped_column(DateTime(timezone=True))]
+date_col = Annotated[date, mapped_column(Date)]
 
 # Custom foreign keys
 FKDeveloper = Annotated[UUID, mapped_column(ForeignKey("developer.id", ondelete="SET NULL"))]
 FKUser = Annotated[UUID, mapped_column(ForeignKey("user.id", ondelete="CASCADE"))]
+UniqueFkUser = Annotated[UUID, mapped_column(ForeignKey("user.id", ondelete="CASCADE"), unique=True)]
 FKEventRecord = Annotated[
     UUID,
     mapped_column(ForeignKey("event_record.id", ondelete="CASCADE"), primary_key=True),

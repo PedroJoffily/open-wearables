@@ -1,24 +1,43 @@
 import { Link, useLocation } from '@tanstack/react-router';
 import {
   Users,
+  LayoutDashboard,
   BarChart3,
   Heart,
   LogOut,
   Settings,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { ROUTES } from '@/lib/constants/routes';
 
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
 const menuItems = [
   {
-    title: 'Members',
+    title: 'Dashboard',
+    url: ROUTES.dashboard,
+    icon: LayoutDashboard,
+  },
+  {
+    title: 'Recommendations',
+    url: ROUTES.recommendations,
+    icon: Sparkles,
+  },
+  {
+    title: 'Clients',
     url: ROUTES.users,
     icon: Users,
   },
   {
-    title: 'Overview',
-    url: ROUTES.dashboard,
+    title: 'Analytics',
+    url: ROUTES.analytics,
     icon: BarChart3,
   },
   {
@@ -26,7 +45,7 @@ const menuItems = [
     url: ROUTES.settings,
     icon: Settings,
   },
-];
+] as const;
 
 export function SimpleSidebar() {
   const location = useLocation();
@@ -47,6 +66,16 @@ export function SimpleSidebar() {
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Greeting */}
+      <div className="px-6 py-3 border-b border-sidebar-border">
+        <p className="text-xs text-sidebar-muted">
+          {getGreeting()}, <span className="font-medium text-sidebar-foreground">Sarah</span>
+        </p>
+        <p className="text-[10px] text-sidebar-muted mt-0.5">
+          {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+        </p>
       </div>
 
       {/* Navigation */}
@@ -85,6 +114,11 @@ export function SimpleSidebar() {
 
       {/* Footer — Coach info + logout */}
       <div className="border-t border-sidebar-border p-3">
+        <div className="px-3 py-2 mb-2">
+          <p className="text-[10px] text-sidebar-muted">
+            Powered by <span className="font-medium text-primary">Open Wearables</span>
+          </p>
+        </div>
         <div className="flex items-center gap-3 px-3 py-2 mb-1">
           <div className="h-8 w-8 rounded-full bg-primary-muted flex items-center justify-center text-xs font-semibold text-primary">
             SC
