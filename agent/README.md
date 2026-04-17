@@ -5,7 +5,7 @@ A FastAPI application with PostgreSQL database support, containerized with Docke
 ## Prerequisites
 
 - Docker and Docker Compose
-- Python 3.12+ (for local development)
+- Python 3.13 (for local development)
 
 ## Setup
 
@@ -24,10 +24,10 @@ A FastAPI application with PostgreSQL database support, containerized with Docke
 docker compose up -d
 
 # Create migration
-docker compose exec app uv run alembic revision --autogenerate -m "Description"
+docker compose exec agent uv run alembic revision --autogenerate -m "Description"
 
 # Run migrations
-docker compose exec app uv run alembic upgrade head
+docker compose exec agent uv run alembic upgrade head
 ```
 
 ### Local Development

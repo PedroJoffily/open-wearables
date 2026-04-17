@@ -18,7 +18,9 @@ class ChatRequest(BaseModel):
             if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved:
                 raise ValueError("callback_url must not point to a private or internal address")
         except ValueError as exc:
-            # host is a domain name — re-raise only our own errors, not the ip_address parse error
+            # host is a domain name — re-raise only our own errors, not the ip_address parse error.
+            # Known limitation: domain names that resolve to private IPs are not blocked here.
+            # DNS-rebinding mitigation is expected to be handled at the network/firewall layer.
             if "callback_url" in str(exc):
                 raise
         return v

@@ -92,6 +92,8 @@ def process_message(
     message: str,
     callback_url: str,
 ) -> None:
+    # asyncio.run() creates a fresh event loop per task, which is safe for prefork
+    # (sync) Celery workers. Do not switch to gevent/eventlet without replacing this.
     asyncio.run(
         _run(
             task_id=current_task.request.id or "",

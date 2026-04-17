@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 from typing import Annotated
 from uuid import UUID
 
@@ -28,15 +27,11 @@ class JWTAuth:
         if not token:
             raise _unauthorized()
         try:
-            payload = jwt.decode(token, self._secret_key, algorithms=[self._algorithm], options={"verify_exp": False})
+            return jwt.decode(token, self._secret_key, algorithms=[self._algorithm])
+        except jwt.ExpiredSignatureError:
+            raise _unauthorized("Token has expired")
         except jwt.PyJWTError:
             raise _unauthorized()
-
-        exp = payload.get("exp")
-        if exp is None or datetime.fromtimestamp(exp, tz=timezone.utc) <= datetime.now(tz=timezone.utc):
-            raise _unauthorized("Token has expired")
-
-        return payload
 
     async def validate_token(self, token: _TokenDep) -> None:
         self._decode(token)

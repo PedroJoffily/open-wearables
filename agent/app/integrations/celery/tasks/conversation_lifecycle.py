@@ -43,4 +43,6 @@ async def _run_lifecycle() -> None:
 
 @shared_task
 def manage_conversation_lifecycle() -> None:
+    # asyncio.run() is safe for prefork (sync) Celery workers — do not switch to
+    # gevent/eventlet without replacing this with a compatible async execution strategy.
     asyncio.run(_run_lifecycle())

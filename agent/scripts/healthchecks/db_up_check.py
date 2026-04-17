@@ -12,6 +12,6 @@ try:
         port=os.getenv("DB_PORT", ""),
     )
 except psycopg.OperationalError:
-    print("- PostgreSQL unavaliable - waiting")
+    print("- PostgreSQL unavailable - waiting")
     sys.exit(-1)
 sys.exit(0)
