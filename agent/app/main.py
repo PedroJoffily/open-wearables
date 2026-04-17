@@ -15,11 +15,11 @@ from app.utils.healthcheck import healthcheck_router
 
 basicConfig(level=INFO, format="[%(asctime)s - %(name)s] (%(levelname)s) %(message)s")
 
-validate_llm_config()
-
 api = FastAPI(title=settings.api_name)
 celery_app = create_celery()
 init_sentry()
+
+validate_llm_config()
 
 add_cors_middleware(api)
 

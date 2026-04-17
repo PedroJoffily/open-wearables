@@ -119,6 +119,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health/db')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     restart: unless-stopped
 
   agent-celery-worker:
@@ -132,9 +138,12 @@ services:
       - DB_HOST=db
       - REDIS_HOST=redis
     depends_on:
-      - redis
-      - db
-      - agent
+      redis:
+        condition: service_started
+      db:
+        condition: service_healthy
+      agent:
+        condition: service_healthy
     restart: unless-stopped
 
   agent-celery-beat:
@@ -148,9 +157,12 @@ services:
       - DB_HOST=db
       - REDIS_HOST=redis
     depends_on:
-      - redis
-      - db
-      - agent
+      redis:
+        condition: service_started
+      db:
+        condition: service_healthy
+      agent:
+        condition: service_healthy
     restart: unless-stopped
     
   svix-server:

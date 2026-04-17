@@ -156,6 +156,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health/db')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     develop:
       watch:
         - action: sync
@@ -185,9 +191,12 @@ services:
       - DB_HOST=db
       - REDIS_HOST=redis
     depends_on:
-      - redis
-      - db
-      - agent
+      redis:
+        condition: service_started
+      db:
+        condition: service_healthy
+      agent:
+        condition: service_healthy
     develop:
       watch:
         - action: sync+restart
@@ -208,9 +217,12 @@ services:
       - DB_HOST=db
       - REDIS_HOST=redis
     depends_on:
-      - redis
-      - db
-      - agent
+      redis:
+        condition: service_started
+      db:
+        condition: service_healthy
+      agent:
+        condition: service_healthy
     develop:
       watch:
         - action: sync+restart

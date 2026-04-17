@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     # DATABASE SETTINGS
     db_host: str = "db"
     db_port: int = 5432
-    db_name: str = "open-wearables"
+    db_name: str = "agent"
     db_user: str = "open-wearables"
     db_password: SecretStr = SecretStr("open-wearables")
 
