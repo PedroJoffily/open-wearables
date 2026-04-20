@@ -94,7 +94,7 @@ function ClientRiskRow({
 }
 
 export function ClientsAtRisk({ className }: ClientsAtRiskProps) {
-  const { data } = usePortfolioStats();
+  const { data, isLoading } = usePortfolioStats();
   const resolveRec = useResolveRecommendation();
   const [resolving, setResolving] = useState<Set<string>>(new Set());
   const clients = data?.clients_at_risk ?? [];
@@ -137,7 +137,17 @@ export function ClientsAtRisk({ className }: ClientsAtRiskProps) {
         )}
       </div>
       <div className="divide-y divide-border">
-        {clients.length > 0 ? (
+        {isLoading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 px-5 py-3">
+              <div className="h-8 w-8 rounded-full bg-muted animate-pulse shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-1/3 bg-muted animate-pulse rounded" />
+                <div className="h-3 w-2/3 bg-muted/50 animate-pulse rounded" />
+              </div>
+            </div>
+          ))
+        ) : clients.length > 0 ? (
           clients.slice(0, 5).map((client) => (
             <ClientRiskRow
               key={client.user_id}

@@ -61,7 +61,7 @@ function FeedItem({ item }: { item: ActivityFeedItem }) {
 }
 
 export function ActivityFeedPanel({ className }: ActivityFeedPanelProps) {
-  const { data } = useActivityFeed(15);
+  const { data, isLoading } = useActivityFeed(15);
   const items = data?.items ?? [];
 
   return (
@@ -83,7 +83,17 @@ export function ActivityFeedPanel({ className }: ActivityFeedPanelProps) {
         </div>
       </div>
       <div className="divide-y divide-border max-h-[400px] overflow-y-auto">
-        {items.length > 0 ? (
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex items-start gap-3 px-5 py-3">
+              <div className="h-7 w-7 rounded-lg bg-muted animate-pulse shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-3/4 bg-muted animate-pulse rounded" />
+                <div className="h-3 w-1/2 bg-muted/50 animate-pulse rounded" />
+              </div>
+            </div>
+          ))
+        ) : items.length > 0 ? (
           items.map((item) => <FeedItem key={item.id} item={item} />)
         ) : (
           <div className="px-5 py-8 text-center">

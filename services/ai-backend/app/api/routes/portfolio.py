@@ -220,6 +220,8 @@ async def get_retention_data():
                     status = "at_risk"
 
                 # Streak: count consecutive days with activity data in last 30d
+                # Start from yesterday (today isn't over yet) and skip
+                # the first gap day to find the actual streak start.
                 streak = 0
                 if activity_7d:
                     activity_30d = await ow_client.get_activity_summary(user_id, date_from_30d, date_to)
@@ -228,11 +230,14 @@ async def get_retention_data():
                         d = a.get("date") or a.get("calendar_date")
                         if d:
                             dates_with_data.add(str(d))
-                    for i in range(30):
+                    # Start from yesterday and count consecutive days
+                    started = False
+                    for i in range(1, 31):
                         check_date = str(date_to - timedelta(days=i))
                         if check_date in dates_with_data:
+                            started = True
                             streak += 1
-                        else:
+                        elif started:
                             break
 
                 async with lock:
