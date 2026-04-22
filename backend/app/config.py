@@ -74,7 +74,7 @@ class Settings(BaseSettings):
     admin_password: SecretStr = SecretStr("your-secure-password")
 
     # AGENT INTERNAL API KEY
-    agent_api_key: str = "sk-agent-default-key"
+    agent_api_key: SecretStr = SecretStr("sk-agent-default-key")
 
     # Time to live for sleep state in Redis
     redis_sleep_ttl_seconds: int = 24 * 3600  # 24 hours

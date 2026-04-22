@@ -158,6 +158,7 @@ services:
     environment:
       - DB_HOST=db
       - REDIS_HOST=redis
+      - ENVIRONMENT=production
     depends_on:
       redis:
         condition: service_started
@@ -178,6 +179,7 @@ services:
     environment:
       - DB_HOST=db
       - REDIS_HOST=redis
+      - ENVIRONMENT=production
     depends_on:
       redis:
         condition: service_started
@@ -186,7 +188,7 @@ services:
       agent:
         condition: service_healthy
     restart: unless-stopped
-    
+
   svix-server:
     container_name: svix-server__open-wearables
     image: svix/svix-server:v1

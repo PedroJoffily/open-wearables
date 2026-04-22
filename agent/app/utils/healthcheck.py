@@ -2,7 +2,7 @@ import asyncio
 
 import anthropic
 import openai
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from google import genai as google_genai
 from sqlalchemy import text
 
@@ -37,10 +37,7 @@ async def database_health(db: AsyncDbSession) -> dict[str, str | dict[str, str]]
             "pool": pool_status,
         }
     except Exception as e:
-        return {
-            "status": "unhealthy",
-            "error": str(e),
-        }
+        raise HTTPException(status_code=503, detail={"status": "unhealthy", "error": str(e)})
 
 
 @healthcheck_router.get("/llm")
