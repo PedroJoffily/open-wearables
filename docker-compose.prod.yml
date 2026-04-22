@@ -31,6 +31,7 @@ services:
     environment:
       - DB_HOST=db
       - REDIS_HOST=redis
+      - ENVIRONMENT=production
     ports:
       - "8000:8000"
     depends_on:
@@ -38,6 +39,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     restart: unless-stopped
 
   celery-worker:
@@ -51,9 +58,12 @@ services:
       - DB_HOST=db
       - REDIS_HOST=redis
     depends_on:
-      - redis
-      - db
-      - app
+      redis:
+        condition: service_started
+      db:
+        condition: service_healthy
+      app:
+        condition: service_healthy
     restart: unless-stopped
 
   celery-beat:
@@ -67,9 +77,12 @@ services:
       - DB_HOST=db
       - REDIS_HOST=redis
     depends_on:
-      - redis
-      - db
-      - app
+      redis:
+        condition: service_started
+      db:
+        condition: service_healthy
+      app:
+        condition: service_healthy
     restart: unless-stopped
 
   flower:
@@ -85,9 +98,12 @@ services:
     ports:
       - 5555:5555
     depends_on:
-      - redis
-      - db
-      - app
+      redis:
+        condition: service_started
+      db:
+        condition: service_healthy
+      app:
+        condition: service_healthy
     restart: unless-stopped
 
   redis:
@@ -96,7 +112,7 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      - redis_data:/var/lib/redis/data
+      - redis_data:/data
     restart: unless-stopped
 
   agent:
@@ -112,6 +128,7 @@ services:
     environment:
       - DB_HOST=db
       - REDIS_HOST=redis
+      - ENVIRONMENT=production
     ports:
       - "8001:8000"
     depends_on:
@@ -119,8 +136,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+      app:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health/db')\""]
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health/db || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5

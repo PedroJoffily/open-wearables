@@ -21,6 +21,10 @@ uv run python scripts/init_device_priorities.py
 echo 'Seeding admin account...'
 uv run python scripts/init/seed_admin.py
 
+# Seed agent internal API key (uses AGENT_API_KEY env var, or default dev key)
+echo 'Seeding agent API key...'
+uv run python scripts/init/seed_agent_api_key.py
+
 # Initialize series type definitions
 echo 'Initializing series type definitions...'
 uv run python scripts/init/seed_series_types.py

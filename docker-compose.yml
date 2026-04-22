@@ -37,6 +37,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     develop:
       watch:
         - action: sync
@@ -69,9 +75,12 @@ services:
       - DB_HOST=db
       - REDIS_HOST=redis
     depends_on:
-      - redis
-      - db
-      - app
+      redis:
+        condition: service_started
+      db:
+        condition: service_healthy
+      app:
+        condition: service_healthy
     develop:
       watch:
         - action: sync+restart
@@ -92,9 +101,12 @@ services:
       - DB_HOST=db
       - REDIS_HOST=redis
     depends_on:
-      - redis
-      - db
-      - app
+      redis:
+        condition: service_started
+      db:
+        condition: service_healthy
+      app:
+        condition: service_healthy
     develop:
       watch:
         - action: sync+restart
@@ -117,9 +129,12 @@ services:
     ports:
       - 5555:5555
     depends_on:
-      - redis
-      - db
-      - app
+      redis:
+        condition: service_started
+      db:
+        condition: service_healthy
+      app:
+        condition: service_healthy
     develop:
       watch:
         - action: sync
@@ -134,7 +149,7 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      - redis_data:/var/lib/redis/data
+      - redis_data:/data
 
   agent:
     build:
@@ -156,8 +171,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+      app:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health/db')\""]
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health/db || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5

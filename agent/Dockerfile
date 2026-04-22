@@ -22,7 +22,7 @@ FROM python:3.13-slim AS builder
 FROM python:3.13-slim
 
     RUN apt-get update && \
-    apt-get install -y --no-install-recommends libpq5 git && \
+    apt-get install -y --no-install-recommends libpq5 git curl && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
