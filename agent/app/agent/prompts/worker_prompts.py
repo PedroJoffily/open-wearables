@@ -27,6 +27,7 @@ ANSWER (route=1) if the message:
 - Is a general greeting or conversation opener
 - Asks for a summary or overview of health data
 - Is a follow-up to a previous health-related exchange
+- Asks about another user's health data by name or email (e.g. "how is Alice sleeping?", "compare Bob and Alice", "show Jan's workouts", "look up Kevin's profile") — the platform supports authorised cross-user queries for group and comparison use cases
 
 REFUSE (route=2) if the message:
 - Requests medical diagnosis or treatment advice

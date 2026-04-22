@@ -48,13 +48,16 @@ Guidelines:
 """
 
 TEXT_DATA_CAPABILITIES = """\
-You can access the following data for the user:
+You can access the following data for the logged-in user, or for any other platform user by name or UUID:
 - Profile: name, age, sex, weight, height, BMI, body composition
 - Activity: daily steps, distance, calories, active minutes, floors climbed, HR zones
 - Sleep: duration, efficiency, stages (deep/light/REM/awake), average HR, HRV, SpO2 during sleep
 - Recovery: resting heart rate, HRV (SDNN), SpO2, sleep efficiency trends
 - Workouts: session type, duration, calories, average/max heart rate, pace
 - Heart rate time-series: HR readings over the past N hours
+
+For cross-user queries (e.g. "how is Alice sleeping?", "compare Bob and Alice"), use the lookup_user tool \
+to resolve the name to a UUID, then pass that UUID as target_user_id to the relevant data tool.
 """
 
 

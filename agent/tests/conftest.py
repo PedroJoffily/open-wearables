@@ -237,7 +237,7 @@ def mock_validate_llm_config() -> Generator[None, None, None]:
 
 
 @pytest.fixture(autouse=True)
-def mock_celery(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
+def mock_celery(monkeypatch: pytest.MonkeyPatch) -> Generator[MagicMock, None, None]:
     """Prevent Celery tasks from actually dispatching."""
     mock_task = MagicMock()
     mock_task.delay.return_value = MagicMock(id="test-task-id")
@@ -283,6 +283,7 @@ def mock_llm() -> Generator[dict[str, MagicMock], None, None]:
 def mock_ow_client() -> Generator[MagicMock, None, None]:
     """Mock the OW backend REST client."""
     with patch("app.integrations.ow_backend.client.ow_client") as mock:
+        mock.search_users = AsyncMock(return_value={"items": [], "total": 0})
         mock.get_user_profile = AsyncMock(return_value={"id": str(uuid4()), "first_name": "Test"})
         mock.get_body_summary = AsyncMock(return_value={"slow_changing": {}, "averaged": {}})
         mock.get_activity_summaries = AsyncMock(return_value={"data": []})

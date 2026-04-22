@@ -24,6 +24,17 @@ class OWClient:
     def _base(self) -> str:
         return settings.ow_api_url.rstrip("/")
 
+    async def search_users(self, query: str, limit: int = 10) -> dict:
+        """GET /users?search={query} — search by name or email."""
+        async with httpx.AsyncClient(timeout=settings.ow_api_timeout) as client:
+            resp = await client.get(
+                f"{self._base()}/api/v1/users",
+                headers=self._headers(),
+                params={"search": query, "limit": limit},
+            )
+            resp.raise_for_status()
+            return resp.json()
+
     async def get_user_profile(self, user_id: UUID) -> dict:
         """GET /users/{user_id} — basic profile (name, email, birth_date, sex, gender)."""
         async with httpx.AsyncClient(timeout=settings.ow_api_timeout) as client:

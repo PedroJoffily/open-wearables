@@ -17,6 +17,7 @@ from app.agent.tools.ow_tools import (
     get_sleep_events,
     get_user_profile,
     get_workouts,
+    lookup_user,
 )
 
 
@@ -80,6 +81,19 @@ class TestGetCurrentWeek:
 @pytest.fixture
 def mock_client() -> Iterator[MagicMock]:
     with patch("app.agent.tools.ow_tools.ow_client") as mock:
+        mock.search_users = AsyncMock(
+            return_value={
+                "items": [
+                    {
+                        "id": "user-uuid-1",
+                        "first_name": "Jan",
+                        "last_name": "Kowalski",
+                        "email": "jan@example.com",
+                    }
+                ],
+                "total": 1,
+            }
+        )
         mock.get_user_profile = AsyncMock(return_value={"id": "abc", "first_name": "Alice"})
         mock.get_body_summary = AsyncMock(return_value={"slow_changing": {"weight_kg": 70}})
         mock.get_activity_summaries = AsyncMock(return_value={"data": [{"steps": 8000}]})
@@ -207,3 +221,95 @@ class TestGetHeartRateTimeseries:
 
         # Should not raise; clamped internally
         mock_client.get_timeseries.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# lookup_user
+# ---------------------------------------------------------------------------
+
+
+class TestLookupUser:
+    async def test_returns_formatted_list_when_users_found(self, mock_client: MagicMock) -> None:
+        result = await lookup_user(_make_ctx(), name="Jan")
+
+        assert "Jan" in result
+        assert "Kowalski" in result
+        assert "user-uuid-1" in result
+        mock_client.search_users.assert_called_once_with("Jan")
+
+    async def test_returns_no_users_message_when_empty(self) -> None:
+        with patch("app.agent.tools.ow_tools.ow_client") as mock:
+            mock.search_users = AsyncMock(return_value={"items": [], "total": 0})
+            result = await lookup_user(_make_ctx(), name="Unknown")
+
+        assert "No users found" in result
+        assert "Unknown" in result
+
+    async def test_returns_error_string_on_exception(self) -> None:
+        with patch("app.agent.tools.ow_tools.ow_client") as mock:
+            mock.search_users = AsyncMock(side_effect=Exception("network error"))
+            result = await lookup_user(_make_ctx(), name="Alice")
+
+        assert "Error" in result
+
+    async def test_handles_missing_optional_fields(self) -> None:
+        with patch("app.agent.tools.ow_tools.ow_client") as mock:
+            mock.search_users = AsyncMock(return_value={"items": [{"id": "some-uuid"}], "total": 1})
+            result = await lookup_user(_make_ctx(), name="x")
+
+        assert "some-uuid" in result
+        assert isinstance(result, str)
+
+
+# ---------------------------------------------------------------------------
+# target_user_id override behaviour
+# ---------------------------------------------------------------------------
+
+
+class TestTargetUserId:
+    async def test_get_user_profile_uses_target_user_id(self, mock_client: MagicMock) -> None:
+        target = uuid4()
+        ctx = _make_ctx()  # ctx has its own user_id
+
+        await get_user_profile(ctx, target_user_id=target)
+
+        called_with = mock_client.get_user_profile.call_args[0][0]
+        assert called_with == target
+        assert called_with != ctx.deps.user_id
+
+    async def test_get_user_profile_falls_back_to_ctx_user_id(self, mock_client: MagicMock) -> None:
+        ctx = _make_ctx()
+
+        await get_user_profile(ctx, target_user_id=None)
+
+        called_with = mock_client.get_user_profile.call_args[0][0]
+        assert called_with == ctx.deps.user_id
+
+    async def test_get_recent_sleep_uses_target_user_id(self, mock_client: MagicMock) -> None:
+        target = uuid4()
+        ctx = _make_ctx()
+
+        await get_recent_sleep(ctx, days=7, target_user_id=target)
+
+        called_with = mock_client.get_sleep_summaries.call_args[0][0]
+        assert called_with == target
+        assert called_with != ctx.deps.user_id
+
+    async def test_get_recent_activity_uses_target_user_id(self, mock_client: MagicMock) -> None:
+        target = uuid4()
+        ctx = _make_ctx()
+
+        await get_recent_activity(ctx, days=7, target_user_id=target)
+
+        called_with = mock_client.get_activity_summaries.call_args[0][0]
+        assert called_with == target
+
+    async def test_returns_error_when_no_user_id_available(self) -> None:
+        ctx = _make_ctx()
+        ctx.deps.user_id = None  # explicitly unset so _resolve_user_id raises
+
+        with patch("app.agent.tools.ow_tools.ow_client") as mock:
+            mock.get_user_profile = AsyncMock(return_value={})
+            result = await get_user_profile(ctx, target_user_id=None)
+
+        assert "Error" in result
